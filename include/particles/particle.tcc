@@ -662,10 +662,11 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress() noexcept {
+void mpm::Particle<Tdim>::compute_stress(const float dt_) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Calculate stress
+  state_variables_[mpm::ParticlePhase::Solid]["dt"] = dt_;
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
