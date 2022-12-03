@@ -59,7 +59,7 @@ Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<3>::compute_stress(
     dev_stress(i) -= trace_stress;
   }
   Vector6d viscous_strain_rate =
-      state_vars.at("dt") * viscosity_ *
+      (*state_vars).at("dt") * viscosity_ *
       std::pow((0.5 * dev_stress.dot(dev_stress)), (viscous_power_-1)/2) *
       dev_stress;
 
