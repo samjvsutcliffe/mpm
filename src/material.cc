@@ -6,6 +6,7 @@
 #include "newtonian.h"
 #include "norsand.h"
 #include "maxwell.h"
+#include "norton_hoff.h"
 
 // Bingham 2D
 static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
@@ -63,3 +64,7 @@ static Register<mpm::Material<2>, mpm::Maxwell<2>, unsigned, const Json&>
 // Maxwell 2D
 static Register<mpm::Material<3>, mpm::Maxwell<3>, unsigned, const Json&>
     maxwell_3d("Maxwell3D");
+
+// Norton-hoff 3D
+static Register<mpm::Material<3>, mpm::Norton_Hoff<3>, unsigned, const Json&>
+    norton_hoff_3d("NortonHoff3D");
