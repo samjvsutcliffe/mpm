@@ -82,6 +82,6 @@ class Norton_Hoff : public Material<Tdim> {
 };  // Norton_Hoff class
 }  // namespace mpm
 
-#include "Norton_Hoff.tcc"
+#include "norton_hoff.tcc"
 
 #endif  // MPM_MATERIAL_Norton_Hoff_H_

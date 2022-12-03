@@ -78,6 +78,6 @@ class Maxwell : public Material<Tdim> {
 };  // Maxwell class
 }  // namespace mpm
 
-#include "Maxwell.tcc"
+#include "maxwell.tcc"
 
 #endif  // MPM_MATERIAL_Maxwell_H_
