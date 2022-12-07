@@ -41,8 +41,12 @@ bool mpm::Norton_Hoff<Tdim>::compute_elastic_tensor() {
   // clang-format on
   return true;
 }
+template <unsigned Tdim>
+Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<Tdim>::jaumann_factor(
+    const Vector6d& dstrain) {
+    //! Compute stress in 3D
 
-//! Compute stress in 3D
+}
 template <>
 Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<3>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain, const ParticleBase<3>* ptr,
@@ -54,17 +58,21 @@ Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<3>::compute_stress(
   const double volumetric_strain_rate =
       strain_rate(0) + strain_rate(1) + strain_rate(2);
   const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
+  const Vector6d second_invar_mult =
+      (Vector6d() << 0.5, 0.5, 0.5, 1, 1, 1).finished();
   Vector6d dev_stress = stress;
   for (int i = 0; i < 3; ++i) {
     dev_stress(i) -= trace_stress;
   }
   Vector6d viscous_strain_rate =
-      (*state_vars).at("dt") * viscosity_ *
-      std::pow((0.5 * dev_stress.dot(dev_stress)), (viscous_power_-1)/2) *
+      ((*state_vars).at("dt") * viscosity_ *
+       std::pow((dev_stress.dot((dev_stress.array() * second_invar_mult.array()).matrix())),
+                viscous_power_ - 1.0)) *
       dev_stress;
 
   // Update stress component
   Eigen::Matrix<double, 6, 1> pstress = stress;
+  //Potentially add jaumann vorticity adjustment
   pstress += this->de_ * (dstrain-viscous_strain_rate);
   return pstress;
 }

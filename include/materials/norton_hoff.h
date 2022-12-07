@@ -52,6 +52,7 @@ class Norton_Hoff : public Material<Tdim> {
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \retval updated_stress Updated value of stress
+  Vector6d jaumann_factor(const Vector6d& dstrain);
   Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
                           const ParticleBase<Tdim>* ptr,
                           mpm::dense_map* state_vars) override;

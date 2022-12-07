@@ -640,6 +640,26 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_rate(
   return strain_rate;
 }
 
+/*
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_vorticity_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+    vorticty[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+    vorticty[4] += dn_dx(i, 2) * vel[1] - dn_dx(i, 1) * vel[2];
+    vorticty[5] += dn_dx(i, 2) * vel[0] - dn_dx(i, 0) * vel[2];
+  }
+
+  for (unsigned i = 3; i < strain_rate.size(); ++i)
+    if (std::fabs(vorticty[i]) < 1.E-15) vorticty[i] = 0.;
+  return vorticty;
+}
+*/
+
 // Compute strain of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
@@ -658,7 +678,18 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
   volumetric_strain_centroid_ += dvolumetric_strain_;
+//  compute_vortiticy(dt);
 }
+
+/*
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::compute_vorticity(double dt) noexcept {
+  // Assign strain rate
+  auto vorticity_rate = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
+  // Update dstrain
+  vorticity_ = vorticity_rate * dt;
+}
+*/
 
 // Compute stress
 template <unsigned Tdim>

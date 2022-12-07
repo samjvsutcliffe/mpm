@@ -167,6 +167,8 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt Analysis time step
   void compute_strain(double dt) noexcept override;
 
+  //void compute_vorticity(double dt) noexcept override;
+
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override { return strain_; }
 
@@ -329,6 +331,9 @@ class Particle : public ParticleBase<Tdim> {
   inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
+  //inline Eigen::Matrix<double, 6, 1> compute_vorticty_rate(
+  //    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
   //! Compute pack size
   //! \retval pack size of serialized object
   int compute_pack_size() const;
@@ -378,6 +383,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> strain_rate_;
   //! dstrains
   Eigen::Matrix<double, 6, 1> dstrain_;
+  //! dstrains
+  Eigen::Matrix<double, 6, 1> vorticity_;
   //! Velocity
   Eigen::Matrix<double, Tdim, 1> velocity_;
   //! Displacement
