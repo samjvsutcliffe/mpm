@@ -65,14 +65,14 @@ Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<3>::compute_stress(
     dev_stress(i) -= trace_stress;
   }
   Vector6d viscous_strain_rate =
-      ((*state_vars).at("dt") * viscosity_ *
-       std::pow((dev_stress.dot((dev_stress.array() * second_invar_mult.array()).matrix())),
-                viscous_power_ - 1.0)) *
-      dev_stress;
+      (*state_vars).at("dt") * viscosity_ *
+    std::pow((dev_stress.dot((dev_stress.array() *
+                              (Eigen::Array<double,6,1>()<<0.5,0.5,0.5,1,1,1).finished()).matrix())), (viscous_power_-1)) * dev_stress;
 
   // Update stress component
   Eigen::Matrix<double, 6, 1> pstress = stress;
-  //Potentially add jaumann vorticity adjustment
-  pstress += this->de_ * (dstrain-viscous_strain_rate);
+  //ptr->strain_ -= viscous_strain_rate;
+  //pstress += this->de_ * (dstrain-viscous_strain_rate);
+  pstress = this->de_ * (ptr->strain());
   return pstress;
 }

@@ -163,6 +163,11 @@ class Particle : public ParticleBase<Tdim> {
   bool assign_material(const std::shared_ptr<Material<Tdim>>& material,
                        unsigned phase = mpm::ParticlePhase::Solid) override;
 
+
+  //! Reformat voigt notation symetric to matrix
+  //! \param[in] voigt a symetric tensor in voigt notation
+  Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt);
+  Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat);
   //! Compute strain
   //! \param[in] dt Analysis time step
   void compute_strain(double dt) noexcept override;
@@ -371,10 +376,14 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 1, Tdim> size_;
   //! Size of particle in natural coordinates
   Eigen::Matrix<double, 1, Tdim> natural_size_;
+  //! Deformation gradient
+  Eigen::Matrix<double, 3, 3> deformation_gradient_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
+public:
   //! Strains
   Eigen::Matrix<double, 6, 1> strain_;
+private:
   //! dvolumetric strain
   double dvolumetric_strain_{0.};
   //! Volumetric strain at centroid
