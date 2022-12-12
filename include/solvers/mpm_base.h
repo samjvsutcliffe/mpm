@@ -38,7 +38,7 @@ enum class VariableType { Scalar, Vector, Tensor };
 //! Damping type
 //! None: No damping is specified
 //! Cundall: Cundall damping
-enum class Damping { None, Cundall };
+enum class Damping { None, Cundall, Viscous };
 
 //! MPMBase class
 //! \brief A class that implements the fully base one phase mpm

@@ -176,11 +176,18 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
-  if (damping_type == "Cundall")
+  if (damping_type == "Cundall") {
+
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
                   std::placeholders::_1, phase, dt_, damping_factor),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  } else if (damping_type == "Viscous") {
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_viscous,
+                  std::placeholders::_1, phase, dt_, damping_factor),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  }
   else
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,

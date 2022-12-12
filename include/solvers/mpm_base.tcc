@@ -1121,6 +1121,7 @@ bool mpm::MPMBase<Tdim>::initialise_damping(const Json& damping_props) {
     // Read damping type
     std::string type = damping_props.at("type").template get<std::string>();
     if (type == "Cundall") damping_type_ = mpm::Damping::Cundall;
+    if (type == "Viscous") damping_type_ = mpm::Damping::Viscous;
 
     // Read damping factor
     damping_factor_ = damping_props.at("damping_factor").template get<double>();

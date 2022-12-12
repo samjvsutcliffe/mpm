@@ -288,6 +288,41 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
   return status;
 }
 
+//! Compute acceleration and velocity with viscous damping factor
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_viscous(
+    unsigned phase, double dt, double damping_factor) noexcept {
+  bool status = false;
+  const double tolerance = 1.0E-15;
+  if (mass_(phase) > tolerance) {
+    // acceleration = (unbalaced force / mass)
+    auto unbalanced_force =
+        this->external_force_.col(phase) + this->internal_force_.col(phase);
+    this->acceleration_.col(phase) =
+        (unbalanced_force - damping_factor * this->velocity_.col(phase)) /
+        this->mass_(phase);
+
+    // Apply friction constraints
+    this->apply_friction_constraints(dt);
+
+    // Velocity += acceleration * dt
+    this->velocity_.col(phase) += this->acceleration_.col(phase) * dt;
+    // Apply velocity constraints, which also sets acceleration to 0,
+    // when velocity is set.
+    this->apply_velocity_constraints();
+
+    // Set a threshold
+    for (unsigned i = 0; i < Tdim; ++i)
+      if (std::abs(velocity_.col(phase)(i)) < tolerance)
+        velocity_.col(phase)(i) = 0.;
+    for (unsigned i = 0; i < Tdim; ++i)
+      if (std::abs(acceleration_.col(phase)(i)) < tolerance)
+        acceleration_.col(phase)(i) = 0.;
+    status = true;
+  }
+  return status;
+}
+
 //! Assign velocity constraint
 //! Constrain directions can take values between 0 and Dim * Nphases
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
