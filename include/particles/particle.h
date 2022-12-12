@@ -380,10 +380,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
-public:
   //! Strains
   Eigen::Matrix<double, 6, 1> strain_;
-private:
   //! dvolumetric strain
   double dvolumetric_strain_{0.};
   //! Volumetric strain at centroid

@@ -685,18 +685,17 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
 
-  //Voight to matrix
+  //Voight to matrix deformation increment
   Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + voigt_to_matrix(dstrain_);
-
+  //Update deformation gradient
   deformation_gradient_ = df * deformation_gradient_;
   if (deformation_gradient_.determinant() <= 0)
   {
     console_->error("Negative volume!\n");
     abort();
   }
-
-  // Update strain
-  //strain_ += dstrain_;
+  // Update strain - linear
+  strain_ += dstrain_;
 
   auto prev_strain = strain_;
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(voigt_to_matrix(strain_));
@@ -728,7 +727,7 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
       this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
 
   // Assign volumetric strain at centroid
-  //dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+  dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
   //Volume ratio can be determined from det df
   dvolumetric_strain_ = df.determinant() - 1;
   //Compute this elsewhere
@@ -759,7 +758,7 @@ void mpm::Particle<Tdim>::compute_stress(const float dt_) noexcept {
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
-  this->stress_ = (this->stress_.array() / deformation_gradient_.determinant()).matrix();
+  //this->stress_ = (this->stress_.array() / deformation_gradient_.determinant()).matrix();
 }
 
 //! Map body force

@@ -45,7 +45,7 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<Tdim>::jaumann_factor(
     const Vector6d& dstrain) {
     //! Compute stress in 3D
-
+  return dstrain;
 }
 template <>
 Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<3>::compute_stress(
@@ -58,21 +58,24 @@ Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<3>::compute_stress(
   const double volumetric_strain_rate =
       strain_rate(0) + strain_rate(1) + strain_rate(2);
   const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
-  const Vector6d second_invar_mult =
-      (Vector6d() << 0.5, 0.5, 0.5, 1, 1, 1).finished();
+  const Eigen::Array<double,6,1> second_invar_mult =
+      (Eigen::Array<double, 6, 1>() << 0.5, 0.5, 0.5, 1, 1, 1).finished();
   Vector6d dev_stress = stress;
   for (int i = 0; i < 3; ++i) {
     dev_stress(i) -= trace_stress;
   }
   Vector6d viscous_strain_rate =
-      (*state_vars).at("dt") * viscosity_ *
-    std::pow((dev_stress.dot((dev_stress.array() *
-                              (Eigen::Array<double,6,1>()<<0.5,0.5,0.5,1,1,1).finished()).matrix())), (viscous_power_-1)) * dev_stress;
+      ((*state_vars).at("dt") * viscosity_ *
+       std::pow((dev_stress.dot(
+                    (dev_stress.array() * second_invar_mult).matrix())),
+                (viscous_power_ - 1))) *
+      dev_stress;
 
   // Update stress component
   Eigen::Matrix<double, 6, 1> pstress = stress;
-  //ptr->strain_ -= viscous_strain_rate;
-  //pstress += this->de_ * (dstrain-viscous_strain_rate);
-  pstress = this->de_ * (ptr->strain());
+  //(reinterpret_cast<Particle<3>*>(ptr))->strain_ -= viscous_strain_rate;
+  // ptr->strain() -= viscous_strain_rate;
+  pstress += this->de_ * (dstrain - viscous_strain_rate);
+  // pstress = this->de_ * (ptr->strain());
   return pstress;
 }
