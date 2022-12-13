@@ -685,6 +685,19 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
 
+  // Linear strain increment
+
+  //strain_ += dstrain_;
+  // Compute at centroid
+  // Strain rate for reduced integration
+  //const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
+  //   this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+  // Assign volumetric strain at centroid
+  //dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+
+
+
+  //Logarithmic strain increment
   //Voight to matrix deformation increment
   Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + voigt_to_matrix(dstrain_);
   //Update deformation gradient
@@ -695,7 +708,6 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
     abort();
   }
   // Update strain - linear
-  strain_ += dstrain_;
 
   auto prev_strain = strain_;
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(voigt_to_matrix(strain_));
@@ -719,20 +731,10 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   auto l = trialeigensolver.eigenvalues();
   auto v = trialeigensolver.eigenvectors();
   strain_ = (matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()).array() * 0.5).matrix();
-  //dstrain_ = strain_ - prev_strain;
-
-  // Compute at centroid
-  // Strain rate for reduced integration
-  const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
-      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
-
-  // Assign volumetric strain at centroid
-  dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
-  //Volume ratio can be determined from det df
   dvolumetric_strain_ = df.determinant() - 1;
+  
+  //Volume ratio can be determined from det df
   //Compute this elsewhere
-  //dvolumetric_strain_ = (vol_post/vol_pre)-1;
-
   volumetric_strain_centroid_ += dvolumetric_strain_;
 //  compute_vortiticy(dt);
 }
