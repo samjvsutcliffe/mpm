@@ -760,7 +760,7 @@ void mpm::Particle<Tdim>::compute_stress(const float dt_) noexcept {
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
-  //this->stress_ = (this->stress_.array() / deformation_gradient_.determinant()).matrix();
+  this->stress_ = (this->stress_.array() / deformation_gradient_.determinant()).matrix();
 }
 
 //! Map body force

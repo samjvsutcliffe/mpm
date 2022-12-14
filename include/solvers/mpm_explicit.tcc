@@ -157,8 +157,16 @@ bool mpm::MPMExplicit<Tdim>::solve() {
                                 set_node_concentrated_force_);
 
     // Particle kinematics
-    mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
-                                             damping_factor_);
+    if (damping_type_ == mpm::Damping::Cundall)
+    {
+        mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall", damping_factor_);
+    }
+    else if (damping_type_ == mpm::Damping::Viscous) {
+        mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Viscous", damping_factor_);
+    }
+    else {
+        mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "", 0);
+    }
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
