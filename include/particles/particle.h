@@ -168,11 +168,25 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] voigt a symetric tensor in voigt notation
   Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt);
   Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat);
+
+  //! Reformat voigt notation vorticity to matrix
+  //! \param[in] voigt an antisymetric tensor in voigt notation
+  Eigen::Matrix<double,3,3> vorticity_matrix(Eigen::Matrix<double,6,1> voigt);
+
+  //! Apply logarithmic spin stress rate adjustment
+  //! \param[in] voigt notation stress
+  Eigen::Matrix<double,6,1> objectify_stress_logspin(Eigen::Matrix<double,6,1> stress);
+
+  //! Apply jaumann stress rate adjustment
+  //! \param[in] voigt notation stress
+  Eigen::Matrix<double,6,1> objectify_stress_jaumann(Eigen::Matrix<double,6,1> stress);
   //! Compute strain
   //! \param[in] dt Analysis time step
   void compute_strain(double dt) noexcept override;
 
-  //void compute_vorticity(double dt) noexcept override;
+  //! Compute vorticity
+  //! \param[in] dt Analysis time step
+  void compute_vorticity(double dt) noexcept override;
 
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override { return strain_; }
@@ -336,8 +350,12 @@ class Particle : public ParticleBase<Tdim> {
   inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
-  //inline Eigen::Matrix<double, 6, 1> compute_vorticty_rate(
-  //    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+  //! Compute vorticity rate
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval vorticity rate at particle inside a cell
+  inline Eigen::Matrix<double, 6, 1> compute_vorticity_rate(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
   //! Compute pack size
   //! \retval pack size of serialized object
@@ -378,6 +396,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 1, Tdim> natural_size_;
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
+  //! stretch tensor
+  Eigen::Matrix<double, 6, 1> stretch_tensor_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
   //! Strains
@@ -390,7 +410,7 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> strain_rate_;
   //! dstrains
   Eigen::Matrix<double, 6, 1> dstrain_;
-  //! dstrains
+  //! dvorticity:
   Eigen::Matrix<double, 6, 1> vorticity_;
   //! Velocity
   Eigen::Matrix<double, Tdim, 1> velocity_;

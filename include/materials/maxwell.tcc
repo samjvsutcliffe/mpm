@@ -49,19 +49,20 @@ Eigen::Matrix<double, 6, 1> mpm::Maxwell<2>::compute_stress(
   // Get strain rate
   const auto& strain_rate = ptr->strain_rate();
   const double volumetric_strain_rate = strain_rate(0) + strain_rate(1);
-
   // Update pressure
-  //(*state_vars).at("elasticity") +=
-  //    (compressibility_multiplier_ *
-  //     this->thermodynamic_pressure(ptr->dvolumetric_strain()));
-
+  //
   // Volumetric stress component
   const double volumetric_component = elasticity_ * volumetric_strain_rate / 3.0;
   const double relaxation_constant = elasticity_ * ((*state_vars).at("dt")) / viscosity_;
+  Vector6d dev_stress = stress;
+  const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
+  for (int i = 0; i < 3; ++i) {
+    dev_stress(i) -= trace_stress;
+  }
   // Update stress component
   Eigen::Matrix<double, 6, 1> pstress = stress;
   pstress += this->de_ * dstrain;
-  pstress -= stress * relaxation_constant;
+  pstress -= dev_stress * relaxation_constant;
   
   return pstress;
 }

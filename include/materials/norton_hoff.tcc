@@ -67,7 +67,7 @@ Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<2>::compute_stress(
       ((*state_vars).at("dt") * viscosity_ *
        std::pow((dev_stress.dot(
                     (dev_stress.array() * second_invar_mult).matrix())),
-                (viscous_power_ - 1))) *
+                (0.5*(viscous_power_ - 1)))) *
       dev_stress;
 
   // Update stress component
@@ -99,7 +99,7 @@ Eigen::Matrix<double, 6, 1> mpm::Norton_Hoff<3>::compute_stress(
       ((*state_vars).at("dt") * viscosity_ *
        std::pow((dev_stress.dot(
                     (dev_stress.array() * second_invar_mult).matrix())),
-                (viscous_power_ - 1))) *
+                (0.5*(viscous_power_ - 1)))) *
       dev_stress;
 
   // Update stress component

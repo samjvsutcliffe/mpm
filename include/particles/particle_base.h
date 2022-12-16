@@ -204,6 +204,9 @@ class ParticleBase {
   //! Compute strain
   virtual void compute_strain(double dt) noexcept = 0;
 
+  //! Compute vorticity
+  virtual void compute_vorticity(double dt) noexcept = 0;
+
   //! Strain
   virtual Eigen::Matrix<double, 6, 1> strain() const = 0;
 

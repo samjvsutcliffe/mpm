@@ -657,7 +657,31 @@ Eigen::Matrix<double,3,3> mpm::Particle<Tdim>::voigt_to_matrix(Eigen::Matrix<dou
           voigt(3), voigt(1), voigt(4),
           voigt(5), voigt(4), voigt(2)).finished();
 }
-/*
+
+template <unsigned Tdim>
+Eigen::Matrix<double,3,3> mpm::Particle<Tdim>::vorticity_matrix(Eigen::Matrix<double,6,1> voigt) {
+  return (Eigen::Matrix3d() <<
+          voigt(0), voigt(3), voigt(5),
+          -voigt(3), voigt(1), voigt(4),
+          -voigt(5), -voigt(4), voigt(2)).finished();
+}
+
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_vorticity_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+  }
+
+  for (unsigned i = 3; i < vorticity.size(); ++i)
+    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
+  return vorticity;
+}
+
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_vorticity_rate(
     const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
@@ -666,16 +690,15 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_vorticity_rate(
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    vorticty[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
-    vorticty[4] += dn_dx(i, 2) * vel[1] - dn_dx(i, 1) * vel[2];
-    vorticty[5] += dn_dx(i, 2) * vel[0] - dn_dx(i, 0) * vel[2];
+    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+    vorticity[4] += dn_dx(i, 2) * vel[1] - dn_dx(i, 1) * vel[2];
+    vorticity[5] += dn_dx(i, 2) * vel[0] - dn_dx(i, 0) * vel[2];
   }
 
-  for (unsigned i = 3; i < strain_rate.size(); ++i)
-    if (std::fabs(vorticty[i]) < 1.E-15) vorticty[i] = 0.;
-  return vorticty;
+  for (unsigned i = 3; i < vorticity.size(); ++i)
+    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
+  return vorticity;
 }
-*/
 
 // Compute strain of the particle
 template <unsigned Tdim>
@@ -684,6 +707,7 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
+  stretch_tensor_ = dstrain_;
 
   // Linear strain increment
 
@@ -702,14 +726,12 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + voigt_to_matrix(dstrain_);
   //Update deformation gradient
   deformation_gradient_ = df * deformation_gradient_;
+  auto strain_prev = strain_;
   if (deformation_gradient_.determinant() <= 0)
   {
     console_->error("Negative volume!\n");
     abort();
   }
-  // Update strain - linear
-
-  auto prev_strain = strain_;
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(voigt_to_matrix(strain_));
   if (eigensolver.info() != Eigen::Success)
   {
@@ -731,23 +753,63 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   auto l = trialeigensolver.eigenvalues();
   auto v = trialeigensolver.eigenvectors();
   strain_ = (matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()).array() * 0.5).matrix();
+  dstrain_ = strain_ - strain_prev;
   dvolumetric_strain_ = df.determinant() - 1;
   
   //Volume ratio can be determined from det df
   //Compute this elsewhere
   volumetric_strain_centroid_ += dvolumetric_strain_;
-//  compute_vortiticy(dt);
+  compute_vorticity(dt);
 }
 
-/*
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_vorticity(double dt) noexcept {
   // Assign strain rate
-  auto vorticity_rate = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
+  auto vorticity_rate = this->compute_vorticity_rate(dn_dx_, mpm::ParticlePhase::Solid);
   // Update dstrain
   vorticity_ = vorticity_rate * dt;
 }
-*/
+
+template <unsigned Tdim>
+Eigen::Matrix<double,6,1> mpm::Particle<Tdim>::objectify_stress_logspin(Eigen::Matrix<double,6,1> stress)
+{
+  const Eigen::Matrix<double,3,3> w = vorticity_matrix(vorticity_);
+  const auto b = deformation_gradient_ * deformation_gradient_.transpose();
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(b);
+  if (eigensolver.info() != Eigen::Success)
+  {
+    console_->error("No eigenvectors in logspin left cauchy green strain matrix?\n");
+    abort();
+  }
+  auto l = eigensolver.eigenvalues();
+  auto v = eigensolver.eigenvectors();
+  auto omega = w;
+  for(int i = 0;i < 3;++i){
+    for(int j = 0;j < 3;++j){
+      if(i != j){
+        auto lambda_a = l(i,i);
+        auto lambda_b = l(j,j);
+        if(std::abs(l(i,i)-l(j,j)) < 1e-6)
+        {
+          omega += ((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
+              * v.col(i) * v.col(i).transpose()
+              * voigt_to_matrix(stretch_tensor_)
+              * v.col(j) * v.col(j).transpose();
+        }
+      }
+    }
+  }
+  auto stress_matrix = voigt_to_matrix(stress);
+  return matrix_to_voigt(voigt_to_matrix(stress) - ((omega * stress_matrix) - (stress_matrix * omega)));
+}
+
+template <unsigned Tdim>
+Eigen::Matrix<double,6,1> mpm::Particle<Tdim>::objectify_stress_jaumann(Eigen::Matrix<double,6,1> stress)
+{
+  Eigen::Matrix<double,3,3> w = vorticity_matrix(vorticity_);
+  auto stress_matrix = voigt_to_matrix(stress);
+  return matrix_to_voigt(voigt_to_matrix(stress) - ((w * stress_matrix) - (stress_matrix * w)));
+}
 
 // Compute stress
 template <unsigned Tdim>
@@ -760,7 +822,7 @@ void mpm::Particle<Tdim>::compute_stress(const float dt_) noexcept {
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
-  this->stress_ = (this->stress_.array() / deformation_gradient_.determinant()).matrix();
+  this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
 }
 
 //! Map body force
