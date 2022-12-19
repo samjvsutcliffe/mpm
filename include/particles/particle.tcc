@@ -711,16 +711,16 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
   // Linear strain increment
 
-  //strain_ += dstrain_;
+  strain_ += dstrain_;
   // Compute at centroid
   // Strain rate for reduced integration
-  //const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
-  //   this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+  const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
+     this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
   // Assign volumetric strain at centroid
-  //dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+  dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
 
 
-
+    /*
   //Logarithmic strain increment
   //Voight to matrix deformation increment
   Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + voigt_to_matrix(dstrain_);
@@ -755,7 +755,7 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   strain_ = (matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()).array() * 0.5).matrix();
   dstrain_ = strain_ - strain_prev;
   dvolumetric_strain_ = df.determinant() - 1;
-  
+  */
   //Volume ratio can be determined from det df
   //Compute this elsewhere
   volumetric_strain_centroid_ += dvolumetric_strain_;
@@ -822,7 +822,8 @@ void mpm::Particle<Tdim>::compute_stress(const float dt_) noexcept {
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
-  this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
+  //this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
+  //this->stress_ = this->stress_;
 }
 
 //! Map body force
