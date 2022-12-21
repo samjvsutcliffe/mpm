@@ -80,8 +80,6 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   Vector6d viscous_stress =
       ((*state_vars).at("dt") * viscosity_ *
        std::pow(effective_strain, (0.5*((1.0/viscous_power_) - 1)))) * dev_strain;
-    //console_->error("Viscous stress {}", viscous_stress(3));
-    //console_->error("effective strain {}", effective_strain);
     pstress(3) = viscous_stress(3);
   }
   //pstress(4) = 0;
