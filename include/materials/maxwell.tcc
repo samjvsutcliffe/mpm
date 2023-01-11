@@ -4,8 +4,10 @@ mpm::Maxwell<Tdim>::Maxwell(unsigned id, const Json& material_properties)
     : Material<Tdim>(id, material_properties) {
   try {
     density_ = material_properties.at("density").template get<double>();
-    elasticity_ =
-        material_properties.at("elasticity").template get<double>();
+    youngs_modulus_ =
+        material_properties.at("youngs_modulus").template get<double>();
+    poisson_ratio_ =
+        material_properties.at("poisson_ratio").template get<double>();
     viscosity_ =
         material_properties.at("viscosity").template get<double>();
 
@@ -20,8 +22,6 @@ mpm::Maxwell<Tdim>::Maxwell(unsigned id, const Json& material_properties)
 template <unsigned Tdim>
 bool mpm::Maxwell<Tdim>::compute_elastic_tensor() {
   // Shear modulus
-  const double youngs_modulus_ = elasticity_;
-  const double poisson_ratio_ = 0.3;
   const double bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
   const double G = youngs_modulus_ / (2.0 * (1. + poisson_ratio_));
 
@@ -40,7 +40,33 @@ bool mpm::Maxwell<Tdim>::compute_elastic_tensor() {
   return true;
 }
 
+//template <>
+//Eigen::Matrix<double, 6, 1> mpm::Maxwell<2>::compute_stress(
+//    const Vector6d& stress, const Vector6d& dstrain, const ParticleBase<2>* ptr,
+//    mpm::dense_map* state_vars) {
+//
+//  // Get strain rate
+//  const auto& strain_rate = ptr->strain_rate();
+//  const double volumetric_strain_rate = strain_rate(0) + strain_rate(1);
+//  // Update pressure
+//  //
+//  // Volumetric stress component
+//  const double relaxation_constant = youngs_modulus_ * ((*state_vars).at("dt")) /
+//                                     (2.0 * (1.0 - poisson_ratio_) * viscosity_);
+//  Vector6d dev_stress = stress;
+//  const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
+//  for (int i = 0; i < 3; ++i) {
+//    dev_stress(i) -= trace_stress;
+//  }
+//  // Update stress component
+//  Eigen::Matrix<double, 6, 1> pstress = stress;
+//  pstress += this->de_ * dstrain;
+//  pstress -= dev_stress * relaxation_constant;
+//  
+//  return pstress;
+//}
 //! Compute stress in 2D
+
 template <>
 Eigen::Matrix<double, 6, 1> mpm::Maxwell<2>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain, const ParticleBase<2>* ptr,
@@ -52,17 +78,27 @@ Eigen::Matrix<double, 6, 1> mpm::Maxwell<2>::compute_stress(
   // Update pressure
   //
   // Volumetric stress component
-  const double volumetric_component = elasticity_ * volumetric_strain_rate / 3.0;
-  const double relaxation_constant = elasticity_ * ((*state_vars).at("dt")) / viscosity_;
+  //const double rho = youngs_modulus_ / (2.0 * (1.0 - poisson_ratio_) * viscosity_);
+  const double relaxation_constant = youngs_modulus_ * ((*state_vars).at("dt")) / (2.0 * (1.0 - poisson_ratio_) * viscosity_);
+  const double rho_exp = std::exp(-relaxation_constant);
   Vector6d dev_stress = stress;
   const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
   for (int i = 0; i < 3; ++i) {
     dev_stress(i) -= trace_stress;
   }
+  Eigen::Matrix<double, 6, 1> elastic_inc = this->de_ * dstrain;
+  const double pressure_inc = (elastic_inc(0) + elastic_inc(1) + elastic_inc(2)) / 3.0;
+  for (int i = 0; i < 3; ++i) {
+    elastic_inc(i) -= pressure_inc;
+  }
+  const double new_pressure = trace_stress + pressure_inc;
   // Update stress component
-  Eigen::Matrix<double, 6, 1> pstress = stress;
-  pstress += this->de_ * dstrain;
-  pstress -= dev_stress * relaxation_constant;
+  Eigen::Matrix<double, 6, 1> pstress = Eigen::Matrix<double, 6, 1>::Zero();
+  pstress(0) = new_pressure;
+  pstress(1) = new_pressure;
+  pstress(2) = new_pressure;
+  pstress += (dev_stress.array() * rho_exp).matrix();
+  pstress += (elastic_inc.array() * ((1 - rho_exp)/relaxation_constant)).matrix();
   
   return pstress;
 }
@@ -76,15 +112,6 @@ Eigen::Matrix<double, 6, 1> mpm::Maxwell<3>::compute_stress(
   const auto& strain_rate = ptr->strain_rate();
   const double volumetric_strain_rate =
       strain_rate(0) + strain_rate(1) + strain_rate(2);
-
-  // Update pressure
-  //(*state_vars).at("elasticity") +=
-  //    (compressibility_multiplier_ *
-  //     this->thermodynamic_pressure(ptr->dvolumetric_strain()));
-
-  // Volumetric stress component
-  const double volumetric_component = elasticity_ * volumetric_strain_rate / 3.0;
-  const double relaxation_constant = elasticity_ / viscosity_;
   // Update stress component
   Eigen::Matrix<double, 6, 1> pstress = stress;
   pstress += this->de_ * dstrain;

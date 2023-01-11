@@ -71,8 +71,10 @@ class Maxwell : public Material<Tdim> {
   Matrix6x6 de_;
   //! Density
   double density_{std::numeric_limits<double>::max()};
-  //! Fluid Bulk modulus
-  double elasticity_{std::numeric_limits<double>::max()};
+  //! Youngs modulus
+  double youngs_modulus_{std::numeric_limits<double>::max()};
+  //! Poisson ratio
+  double poisson_ratio_{std::numeric_limits<double>::max()};
   //! Fluid Dynamic viscosity
   double viscosity_{std::numeric_limits<double>::max()};
 };  // Maxwell class
