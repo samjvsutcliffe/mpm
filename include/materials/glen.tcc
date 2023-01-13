@@ -164,8 +164,8 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
     elastic_inc(i) -= pressure_inc;
   }
   const double bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
-  //const double new_pressure = trace_stress + pressure_inc;
-  const double new_pressure = bulk_modulus_ * (strain(0) + strain(1) + strain(2));
+  const double new_pressure = trace_stress + pressure_inc;
+  //const double new_pressure = bulk_modulus_ * (strain(0) + strain(1) + strain(2));
   // Update stress component
   Eigen::Matrix<double, 6, 1> pstress = Eigen::Matrix<double, 6, 1>::Zero();
   pstress(0) = new_pressure;

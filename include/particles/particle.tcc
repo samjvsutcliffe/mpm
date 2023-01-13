@@ -818,10 +818,13 @@ void mpm::Particle<Tdim>::compute_stress(const float dt_) noexcept {
   assert(this->material() != nullptr);
   // Calculate stress
   state_variables_[mpm::ParticlePhase::Solid]["dt"] = dt_;
+  //Previous steps kirchoff stress
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
+  //New kirchoff stress
+  //Turn into cauchy of end 
   //this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
   this->stress_ = this->stress_ / deformation_gradient_.determinant();
   //this->stress_ = this->stress_;
