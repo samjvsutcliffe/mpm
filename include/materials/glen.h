@@ -47,6 +47,7 @@ class Glen : public Material<Tdim> {
   std::vector<std::string> state_variables() const override { return {}; }
   //! Compute viscosity
   double compute_glen_viscosity(Eigen::Matrix<double, 6, 1> stress,double viscous_factor, double viscous_power);
+  double compute_glen_viscosity_strain(Eigen::Matrix<double, 6, 1> strain,double viscous_factor, double viscous_power);
 
   //! Compute stress
   //! \param[in] stress Stress
