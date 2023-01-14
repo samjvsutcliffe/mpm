@@ -192,6 +192,19 @@ bool mpm::MPMExplicit<Tdim>::solve() {
       // Partio outputs
       this->write_partio(this->step_, this->nsteps_);
 #endif
+      if(time_init)
+      {
+          auto now = std::chrono::high_resolution_clock::now();
+          auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(now-time_prev_output_);
+          double ms = dur.count()*1e-3;
+          console_->info("Time per output {}ms", ms);
+          console_->info("Throughput {} steps/s", output_steps_/ms);
+          time_prev_output_ = now;
+      }
+      else{
+          time_prev_output_ = std::chrono::high_resolution_clock::now();
+          time_init = true;
+      }
     }
   }
   auto solver_end = std::chrono::steady_clock::now();

@@ -62,5 +62,7 @@ Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
   const Vector6d dstress = this->de_ * dstrain;
-  return (stress + dstress);
+
+  //return (stress + dstress);
+  return de_ * ptr->strain();
 }

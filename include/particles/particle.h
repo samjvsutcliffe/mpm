@@ -10,6 +10,7 @@
 #include "cell.h"
 #include "logger.h"
 #include "particle_base.h"
+#include <unsupported/Eigen/MatrixFunctions>
 
 namespace mpm {
 
@@ -394,6 +395,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 1, Tdim> size_;
   //! Size of particle in natural coordinates
   Eigen::Matrix<double, 1, Tdim> natural_size_;
+  //! Size of particle in natural coordinates
+  Eigen::Matrix<double, 1, Tdim> natural_size_0_;
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
   //! stretch tensor

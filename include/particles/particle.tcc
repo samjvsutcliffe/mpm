@@ -239,6 +239,7 @@ void mpm::Particle<Tdim>::initialise() {
   dstrain_.setZero();
   mass_ = 0.;
   natural_size_.setZero();
+  natural_size_0_.setZero();
   set_traction_ = false;
   size_.setZero();
   strain_rate_.setZero();
@@ -478,6 +479,8 @@ bool mpm::Particle<Tdim>::assign_volume(double volume) {
       this->natural_size_.fill(
           element->unit_element_length() /
           std::pow(cell_->nparticles(), static_cast<double>(1. / Tdim)));
+      this->natural_size_0_ = natural_size_;
+      //this->natrual_size_0_ = std::copy(std::begin(natural_size_),std::end(natural_size_));
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -753,8 +756,15 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   }
   auto l = trialeigensolver.eigenvalues();
   auto v = trialeigensolver.eigenvectors();
-  strain_ = (matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()).array() * 0.5).matrix();
+  strain_ = matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()) * 0.5;
   dstrain_ = strain_ - strain_prev;
+  //Update size
+  Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
+  for(int i = 0; i < Tdim;++i){
+      natural_size_(i) *= dlength(i,i);
+  }
+
+  
   dvolumetric_strain_ = df.determinant() - 1;
   //Volume ratio can be determined from det df
   //Compute this elsewhere
