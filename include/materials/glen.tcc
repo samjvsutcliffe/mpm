@@ -148,10 +148,10 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   //
   // Volumetric stress component
   //const double rho = youngs_modulus_ / (2.0 * (1.0 - poisson_ratio_) * viscosity_);
-  //const double viscosity =
-  //    compute_glen_viscosity(stress, viscosity_, viscous_power_);
   const double viscosity =
-      compute_glen_viscosity_strain(dstrain * (1/dt), viscosity_, viscous_power_);
+      compute_glen_viscosity(ptr->stress_cauchy(), std::pow(viscosity_,-viscous_power_), viscous_power_);
+  //const double viscosity =
+  //    compute_glen_viscosity_strain(dstrain * (1/dt), viscosity_, viscous_power_);
 
   Vector6d dev_stress = stress;
   const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
@@ -171,17 +171,17 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   pstress(0) = new_pressure;
   pstress(1) = new_pressure;
   pstress(2) = new_pressure;
-  //if (viscosity > 0.0) 
-  //{
+  if (viscosity > 0.0) 
+  {
     const double rho = (2.0 * (1.0 - poisson_ratio_) * viscosity) / youngs_modulus_;
     const double rho_t = dt / rho;
     const double rho_exp = std::exp(-rho_t);
     const double lambda = (1 - rho_exp) * rho / dt;
     pstress += (dev_stress.array() * rho_exp).matrix();
     pstress += (elastic_inc.array() * lambda).matrix();
-  //} else {
-  //  pstress += elastic_inc;
-  //}
+  } else {
+    pstress += elastic_inc;
+  }
 
   /*
   Vector6d dev_stress = stress;

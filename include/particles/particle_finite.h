@@ -1,5 +1,5 @@
-#ifndef MPM_PARTICLE_H_
-#define MPM_PARTICLE_H_
+#ifndef MPM_PARTICLE_FINITE_H_
+#define MPM_PARTICLE_FINITE_H_
 
 #include <array>
 #include <limits>
@@ -10,7 +10,6 @@
 #include "cell.h"
 #include "logger.h"
 #include "particle_base.h"
-#include <unsupported/Eigen/MatrixFunctions>
 
 namespace mpm {
 
@@ -19,7 +18,7 @@ namespace mpm {
 //! \details Particle class: id_ and coordinates.
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class Particle : public ParticleBase<Tdim> {
+class ParticleFinite : public ParticleBase<Tdim> {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
@@ -30,22 +29,22 @@ class Particle : public ParticleBase<Tdim> {
   //! Construct a particle with id and coordinates
   //! \param[in] id Particle id
   //! \param[in] coord coordinates of the particle
-  Particle(Index id, const VectorDim& coord);
+  ParticleFinite(Index id, const VectorDim& coord);
 
   //! Construct a particle with id, coordinates and status
   //! \param[in] id Particle id
   //! \param[in] coord coordinates of the particle
   //! \param[in] status Particle status (active / inactive)
-  Particle(Index id, const VectorDim& coord, bool status);
+  ParticleFinite(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~Particle() override{};
+  ~ParticleFinite() override{};
 
   //! Delete copy constructor
-  Particle(const Particle<Tdim>&) = delete;
+  ParticleFinite(const ParticleFinite<Tdim>&) = delete;
 
   //! Delete assignment operator
-  Particle& operator=(const Particle<Tdim>&) = delete;
+  ParticleFinite& operator=(const ParticleFinite<Tdim>&) = delete;
 
   //! Initialise particle from HDF5 data
   //! \param[in] particle HDF5 data of particle
@@ -158,8 +157,6 @@ class Particle : public ParticleBase<Tdim> {
   //! Return mass of the particles
   double mass() const override { return mass_; }
 
-  //! Return deformation gradient
-
   //! Assign material
   //! \param[in] material Pointer to a material
   //! \param[in] phase Index to indicate phase
@@ -220,11 +217,6 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
-
-  //! Return cauchy stress of the particle
-  Eigen::Matrix<double, 6, 1> stress_cauchy() const override {
-    return stress_ / deformation_gradient_.determinant();
-  }
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
@@ -402,8 +394,6 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 1, Tdim> size_;
   //! Size of particle in natural coordinates
   Eigen::Matrix<double, 1, Tdim> natural_size_;
-  //! Size of particle in natural coordinates
-  Eigen::Matrix<double, 1, Tdim> natural_size_0_;
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
   //! stretch tensor
@@ -453,6 +443,6 @@ class Particle : public ParticleBase<Tdim> {
 };  // Particle class
 }  // namespace mpm
 
-#include "particle.tcc"
+#include "particle_finite.tcc"
 
 #endif  // MPM_PARTICLE_H__
