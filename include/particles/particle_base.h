@@ -321,6 +321,15 @@ class ParticleBase {
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) = 0;
 
+  //! Reformat voigt notation symetric to matrix
+  //! \param[in] voigt a symetric tensor in voigt notation
+  Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt);
+  Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat);
+
+  //! Reformat voigt notation vorticity to matrix
+  //! \param[in] voigt an antisymetric tensor in voigt notation
+  Eigen::Matrix<double,3,3> vorticity_matrix(Eigen::Matrix<double,6,1> voigt);
+
  protected:
   //! particleBase id
   Index id_{std::numeric_limits<Index>::max()};

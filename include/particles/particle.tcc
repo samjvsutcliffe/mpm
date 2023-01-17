@@ -94,7 +94,6 @@ bool mpm::Particle<Tdim>::initialise_particle(const HDF5Particle& particle) {
   // Status
   this->status_ = particle.status;
 
-
   // Cell id
   this->cell_id_ = particle.cell_id;
   this->cell_ = nullptr;
@@ -239,7 +238,6 @@ void mpm::Particle<Tdim>::initialise() {
   dstrain_.setZero();
   mass_ = 0.;
   natural_size_.setZero();
-  natural_size_0_.setZero();
   set_traction_ = false;
   size_.setZero();
   strain_rate_.setZero();
@@ -249,7 +247,6 @@ void mpm::Particle<Tdim>::initialise() {
   velocity_.setZero();
   volume_ = std::numeric_limits<double>::max();
   volumetric_strain_centroid_ = 0.;
-  this->deformation_gradient_ = Eigen::Matrix3d::Identity();
 
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_["mass"] = [&]() { return mass(); };
@@ -479,8 +476,6 @@ bool mpm::Particle<Tdim>::assign_volume(double volume) {
       this->natural_size_.fill(
           element->unit_element_length() /
           std::pow(cell_->nparticles(), static_cast<double>(1. / Tdim)));
-      this->natural_size_0_ = natural_size_;
-      //this->natrual_size_0_ = std::copy(std::begin(natural_size_),std::end(natural_size_));
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -645,64 +640,6 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_rate(
   return strain_rate;
 }
 
-template <unsigned Tdim>
-Eigen::Matrix<double,6,1> mpm::Particle<Tdim>::matrix_to_voigt(Eigen::Matrix<double,3,3> mat) {
-  return (Eigen::Matrix<double,6,1>() <<
-          mat(0,0), mat(1,1),mat(2,2),
-          mat(0,1), mat(1,2),mat(0,2)
-          ).finished();
-}
-
-template <unsigned Tdim>
-Eigen::Matrix<double,3,3> mpm::Particle<Tdim>::voigt_to_matrix(Eigen::Matrix<double,6,1> voigt) {
-  return (Eigen::Matrix3d() <<
-          voigt(0), voigt(3), voigt(5),
-          voigt(3), voigt(1), voigt(4),
-          voigt(5), voigt(4), voigt(2)).finished();
-}
-
-template <unsigned Tdim>
-Eigen::Matrix<double,3,3> mpm::Particle<Tdim>::vorticity_matrix(Eigen::Matrix<double,6,1> voigt) {
-  return (Eigen::Matrix3d() <<
-          voigt(0), voigt(3), voigt(5),
-          -voigt(3), voigt(1), voigt(4),
-          -voigt(5), -voigt(4), voigt(2)).finished();
-}
-
-template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_vorticity_rate(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rate
-  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
-    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
-  }
-
-  for (unsigned i = 3; i < vorticity.size(); ++i)
-    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
-  return vorticity;
-}
-
-template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_vorticity_rate(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rate
-  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
-    vorticity[4] += dn_dx(i, 2) * vel[1] - dn_dx(i, 1) * vel[2];
-    vorticity[5] += dn_dx(i, 2) * vel[0] - dn_dx(i, 0) * vel[2];
-  }
-
-  for (unsigned i = 3; i < vorticity.size(); ++i)
-    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
-  return vorticity;
-}
-
 // Compute strain of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
@@ -710,134 +647,30 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
-  stretch_tensor_ = dstrain_;
-
-  // Linear strain increment
-
-  /*
+  // Update strain
   strain_ += dstrain_;
+
   // Compute at centroid
   // Strain rate for reduced integration
   const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
-     this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
-*/
-
-  //Logarithmic strain increment
-  //Voight to matrix deformation increment
-  stress_ = stress_ * deformation_gradient_.determinant();
-  Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + voigt_to_matrix(dstrain_);
-  //Update deformation gradient
-  deformation_gradient_ = df * deformation_gradient_;
-  auto strain_prev = strain_;
-  if (deformation_gradient_.determinant() <= 0)
-  {
-    console_->error("Negative volume!\n");
-    abort();
-  }
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(voigt_to_matrix(strain_));
-  if (eigensolver.info() != Eigen::Success)
-  {
-    console_->error("No eigenvectors in strain matrix?\n");
-    abort();
-  }
-  auto eigen_values = eigensolver.eigenvalues();
-  auto eigen_vectors = eigensolver.eigenvectors();
-  auto trial_lgs = df * (eigen_vectors
-                         * (eigen_values.array() * 2.0).exp().matrix().asDiagonal()
-                         * eigen_vectors.transpose()) * df.transpose();
-
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> trialeigensolver(trial_lgs);
-  if (trialeigensolver.info() != Eigen::Success)
-  {
-    console_->error("No eigenvectors in trial strain matrix?\n");
-    abort();
-  }
-  auto l = trialeigensolver.eigenvalues();
-  auto v = trialeigensolver.eigenvectors();
-  strain_ = matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()) * 0.5;
-  dstrain_ = strain_ - strain_prev;
-  //Update size
-  Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
-  for(int i = 0; i < Tdim;++i){
-      natural_size_(i) *= dlength(i,i);
-  }
-
-  
-  dvolumetric_strain_ = df.determinant() - 1;
-  //Volume ratio can be determined from det df
-  //Compute this elsewhere
   volumetric_strain_centroid_ += dvolumetric_strain_;
-  compute_vorticity(dt);
-}
-
-template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_vorticity(double dt) noexcept {
-  // Assign strain rate
-  auto vorticity_rate = this->compute_vorticity_rate(dn_dx_, mpm::ParticlePhase::Solid);
-  // Update dstrain
-  vorticity_ = vorticity_rate * dt;
-}
-
-template <unsigned Tdim>
-Eigen::Matrix<double,6,1> mpm::Particle<Tdim>::objectify_stress_logspin(Eigen::Matrix<double,6,1> stress)
-{
-  const Eigen::Matrix<double,3,3> w = vorticity_matrix(vorticity_);
-  const auto b = deformation_gradient_ * deformation_gradient_.transpose();
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(b);
-  if (eigensolver.info() != Eigen::Success)
-  {
-    console_->error("No eigenvectors in logspin left cauchy green strain matrix?\n");
-    abort();
-  }
-  auto l = eigensolver.eigenvalues();
-  auto v = eigensolver.eigenvectors();
-  auto omega = w;
-  for(int i = 0;i < 3;++i){
-    for(int j = 0;j < 3;++j){
-      if(i != j){
-        auto lambda_a = l(i,i);
-        auto lambda_b = l(j,j);
-        if(std::abs(l(i,i)-l(j,j)) < 1e-6)
-        {
-          omega += ((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
-              * v.col(i) * v.col(i).transpose()
-              * voigt_to_matrix(stretch_tensor_)
-              * v.col(j) * v.col(j).transpose();
-        }
-      }
-    }
-  }
-  auto stress_matrix = voigt_to_matrix(stress);
-  return matrix_to_voigt(voigt_to_matrix(stress) - ((omega * stress_matrix) - (stress_matrix * omega)));
-}
-
-template <unsigned Tdim>
-Eigen::Matrix<double,6,1> mpm::Particle<Tdim>::objectify_stress_jaumann(Eigen::Matrix<double,6,1> stress)
-{
-  Eigen::Matrix<double,3,3> w = vorticity_matrix(vorticity_);
-  auto stress_matrix = voigt_to_matrix(stress);
-  return matrix_to_voigt(voigt_to_matrix(stress) - ((w * stress_matrix) - (stress_matrix * w)));
 }
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress(const float dt_) noexcept {
+void mpm::Particle<Tdim>::compute_stress(float dt_) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
-  // Calculate stress
   state_variables_[mpm::ParticlePhase::Solid]["dt"] = dt_;
-  //Previous steps kirchoff stress
+  // Calculate stress
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
-  //New kirchoff stress
-  //Turn into cauchy of end 
-  //this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
-  this->stress_ = this->stress_ / deformation_gradient_.determinant();
-  //this->stress_ = this->stress_;
 }
 
 //! Map body force
@@ -1327,4 +1160,54 @@ void mpm::Particle<Tdim>::deserialize(
   }
 
 #endif
+}
+
+template <unsigned Tdim>
+Eigen::Matrix<double,3,3> mpm::Particle<Tdim>::vorticity_matrix(Eigen::Matrix<double,6,1> voigt) {
+  return (Eigen::Matrix3d() <<
+          voigt(0), voigt(3), voigt(5),
+          -voigt(3), voigt(1), voigt(4),
+          -voigt(5), -voigt(4), voigt(2)).finished();
+}
+
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_vorticity_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+  }
+
+  for (unsigned i = 3; i < vorticity.size(); ++i)
+    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
+  return vorticity;
+}
+
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_vorticity_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+    vorticity[4] += dn_dx(i, 2) * vel[1] - dn_dx(i, 1) * vel[2];
+    vorticity[5] += dn_dx(i, 2) * vel[0] - dn_dx(i, 0) * vel[2];
+  }
+
+  for (unsigned i = 3; i < vorticity.size(); ++i)
+    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
+  return vorticity;
+}
+
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::compute_vorticity(double dt) noexcept {
+  // Assign strain rate
+  auto vorticity_rate = this->compute_vorticity_rate(dn_dx_, mpm::ParticlePhase::Solid);
+  // Update dstrain
+  vorticity_ = vorticity_rate * dt;
 }

@@ -223,7 +223,7 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Return cauchy stress of the particle
   Eigen::Matrix<double, 6, 1> stress_cauchy() const override {
-    return stress_ / deformation_gradient_.determinant();
+    return stress_;
   }
 
   //! Map body force

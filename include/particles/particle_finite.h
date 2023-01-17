@@ -164,14 +164,6 @@ class ParticleFinite : public ParticleBase<Tdim> {
                        unsigned phase = mpm::ParticlePhase::Solid) override;
 
 
-  //! Reformat voigt notation symetric to matrix
-  //! \param[in] voigt a symetric tensor in voigt notation
-  Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt);
-  Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat);
-
-  //! Reformat voigt notation vorticity to matrix
-  //! \param[in] voigt an antisymetric tensor in voigt notation
-  Eigen::Matrix<double,3,3> vorticity_matrix(Eigen::Matrix<double,6,1> voigt);
 
   //! Apply logarithmic spin stress rate adjustment
   //! \param[in] voigt notation stress
@@ -217,6 +209,11 @@ class ParticleFinite : public ParticleBase<Tdim> {
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
+
+  //! Return cauchy stress of the particle
+  Eigen::Matrix<double, 6, 1> stress_cauchy() const override {
+    return stress_ / deformation_gradient_.determinant();
+  }
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
@@ -394,6 +391,8 @@ class ParticleFinite : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 1, Tdim> size_;
   //! Size of particle in natural coordinates
   Eigen::Matrix<double, 1, Tdim> natural_size_;
+  //! Size of particle in natural coordinates
+  Eigen::Matrix<double, 1, Tdim> natural_size_0_;
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
   //! stretch tensor
