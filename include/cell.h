@@ -17,6 +17,7 @@
 #include "logger.h"
 #include "map.h"
 #include "node_base.h"
+#include "node_base.h"
 #include "quadrature.h"
 
 namespace mpm {
@@ -93,6 +94,9 @@ class Cell {
   std::vector<std::shared_ptr<mpm::NodeBase<Tdim>>> nodes() const {
     return nodes_;
   }
+  std::vector<int> & nodes_local_ids()  {
+    return nodes_local_ids_;
+  }
 
   //! Return nodes id in a cell
   std::set<mpm::Index> nodes_id() const {
@@ -121,6 +125,15 @@ class Cell {
   //! \param[in] node A shared pointer to the node
   //! \retval insertion_status Return the successful addition of a node
   bool add_node(unsigned local_id, const std::shared_ptr<NodeBase<Tdim>>& node);
+
+  //! For gimp add empty nodes in stencil
+  bool add_empty_node() {
+    //if (nodes_.size() < this->nnodes_ && local_id < this->nnodes_) {
+      //What an incredible construct
+    //  nodes_.emplace_back(std::make_shared<mpm::Node<Tdim,0,0>>(nullptr));
+    return true;
+    //}
+  }
 
   //! Add a neighbour cell
   //! \param[in] neighbour_id id of the neighbouring cell
@@ -247,6 +260,8 @@ class Cell {
   unsigned nglobal_particles_{0};
   //! Container of node pointers (local id, node pointer)
   std::vector<std::shared_ptr<NodeBase<Tdim>>> nodes_;
+  //! Container of node pointers (local id, node pointer)
+  std::vector<int> nodes_local_ids_;
   //! Nodal coordinates
   Eigen::MatrixXd nodal_coordinates_;
   //! Container of cell neighbour ids

@@ -1,35 +1,82 @@
 // Return natural nodal coordinates
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline Eigen::MatrixXd mpm::QuadrilateralGIMPElement<
-    Tdim, Tnfunctions>::natural_nodal_coordinates() const {
+    Tdim>::natural_nodal_coordinates() const {
   //! Natural coordinates of nodes
   // clang-format off
+    /*
   const Eigen::Matrix<double, Tnfunctions, Tdim> local_nodes =
-  (Eigen::Matrix<double, Tnfunctions, Tdim>() << -1., -1.,
+  (Eigen::Matrix<double, Tnfunctions, Tdim>() << 
+                                     -1., -1.,
                                       1., -1.,
                                       1.,  1.,
                                      -1.,  1.,
+
                                      -3., -3.,
                                      -1., -3.,
                                       1., -3.,
                                       3., -3.,
+
                                       3., -1.,
                                       3.,  1.,
                                       3.,  3.,
                                       1.,  3.,
+
                                      -1.,  3.,
                                      -3.,  3.,
                                      -3.,  1.,
-                                     -3., -1.).finished();
+                                     -3., -1.
+      ).finished();
+  const Eigen::Matrix<double, Tnfunctions, Tdim> local_nodes =
+  (Eigen::Matrix<double, Tnfunctions, Tdim>() << 
+    -1, -1,
+    1 ,-1 ,
+    1 ,1  ,
+    -1, 1 ,
+    -3, -1,
+    3 ,-1 ,
+    1 ,-3 ,
+    1 ,3  ,
+    3 ,1  ,
+    -3, 1 ,
+    -1, 3 ,
+    -1, -3,
+    -3, -3,
+    3 ,-3 ,
+    3 ,3  ,
+    -3, 3
+      ).finished();
+*/
+
+  // Eigen::Matrix<double, 16, Tdim> local_nodes =
+  //(Eigen::Matrix<double, 16, Tdim>() << 
+  //  -1, -1,
+  //  1 ,-1 ,
+  //  1 ,1  ,
+  //  -1, 1 ,
+  //  -3, -1,
+  //  3 ,-1 ,
+  //  1 ,-3 ,
+  //  1 ,3  ,
+  //  3 ,1  ,
+  //  -3, 1 ,
+  //  -1, 3 ,
+  //  -1, -3,
+  //  -3, -3,
+  //  3 ,-3 ,
+  //  3 ,3  ,
+  //  -3, 3
+  //    ).finished();
+
   // clang-format on
-  return local_nodes;
+  return local_node_mapping_;
 }
 
 //! Return shape functions of a 16-node Quadrilateral GIMP Element at a given
 //! local coordinate
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline Eigen::VectorXd
-    mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::shapefn(
+    mpm::QuadrilateralGIMPElement<Tdim>::shapefn(
         const Eigen::Matrix<double, Tdim, 1>& xi,
         const Eigen::Matrix<double, Tdim, 1>& particle_size,
         const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
@@ -37,11 +84,10 @@ inline Eigen::VectorXd
   //! length of element in local coordinate
   const double element_length = 2.;
   //! Natural nodal coordinates
-  const Eigen::Matrix<double, Tnfunctions, Tdim> local_nodes =
-      this->natural_nodal_coordinates();
+  //Eigen::Matrix<double, Eigen::Dynamic, Tdim> local_nodes = this->natural_nodal_coordinates();
+  Eigen::MatrixXd local_nodes = this->natural_nodal_coordinates();
   //! To store shape functions
-  Eigen::Matrix<double, Tnfunctions, 1> shapefn;
-
+  Eigen::VectorXd shapefn(Tnfunctions);
   try {
     //! loop to iterate over nodes
     for (unsigned n = 0; n < Tnfunctions; ++n) {
@@ -87,9 +133,9 @@ inline Eigen::VectorXd
 
 //! Return gradient of shape functions of a 16-node Quadrilateral Element at a
 //! given local coordinate
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline Eigen::MatrixXd
-    mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::grad_shapefn(
+    mpm::QuadrilateralGIMPElement<Tdim>::grad_shapefn(
         const Eigen::Matrix<double, Tdim, 1>& xi,
         const Eigen::Matrix<double, Tdim, 1>& particle_size,
         const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
@@ -97,10 +143,11 @@ inline Eigen::MatrixXd
   //! length of element in local coordinate
   const double element_length = 2.;
   //! Natural nodal coordinates
-  const Eigen::Matrix<double, Tnfunctions, Tdim> local_nodes =
-      this->natural_nodal_coordinates();
+  //Eigen::Matrix<double, Eigen::Dynamic, Tdim> local_nodes = this->natural_nodal_coordinates();
+  Eigen::MatrixXd local_nodes = this->natural_nodal_coordinates();
   //! To store grad shape functions
-  Eigen::Matrix<double, Tnfunctions, Tdim> grad_shapefn;
+  //Eigen::Matrix<double, Eigen::Dynamic, Tdim> grad_shapefn(Tnfunctions);
+  Eigen::MatrixXd grad_shapefn(Tnfunctions,Tdim);
   try {
     //! loop to iterate over nodes
     for (unsigned n = 0; n < Tnfunctions; ++n) {
@@ -156,13 +203,14 @@ inline Eigen::MatrixXd
     return grad_shapefn;
   }
   return grad_shapefn;
+
 }
 
 //! Return the B-matrix of a Quadrilateral Element at a given local
 //! coordinate for a real cell
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline std::vector<Eigen::MatrixXd>
-    mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::bmatrix(
+    mpm::QuadrilateralGIMPElement<Tdim>::bmatrix(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
         const VectorDim& particle_size,
         const VectorDim& deformation_gradient) const {
@@ -209,9 +257,9 @@ inline std::vector<Eigen::MatrixXd>
 
 //! Return local shape functions of a GIMP Quadrilateral Element at a given
 //! local coordinate, with particle size and deformation gradient
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline Eigen::VectorXd
-    mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::shapefn_local(
+    mpm::QuadrilateralGIMPElement<Tdim>::shapefn_local(
         const VectorDim& xi, const VectorDim& particle_size,
         const VectorDim& deformation_gradient) const {
   return mpm::QuadrilateralElement<Tdim, 4>::shapefn(xi, particle_size,
@@ -219,9 +267,9 @@ inline Eigen::VectorXd
 }
 
 //! Compute Jacobian with particle size and deformation gradient
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline Eigen::Matrix<double, Tdim, Tdim>
-    mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::jacobian(
+    mpm::QuadrilateralGIMPElement<Tdim>::jacobian(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
         const VectorDim& particle_size,
         const VectorDim& deformation_gradient) const {
@@ -247,9 +295,9 @@ inline Eigen::Matrix<double, Tdim, Tdim>
 }
 
 //! Compute Jacobian local with particle size and deformation gradient
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline Eigen::Matrix<double, Tdim, Tdim>
-    mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::jacobian_local(
+    mpm::QuadrilateralGIMPElement<Tdim>::jacobian_local(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
         const VectorDim& particle_size,
         const VectorDim& deformation_gradient) const {
@@ -259,9 +307,9 @@ inline Eigen::Matrix<double, Tdim, Tdim>
 }
 
 //! Compute natural coordinates of a point (analytical)
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 inline Eigen::Matrix<double, Tdim, 1> mpm::
-    QuadrilateralGIMPElement<Tdim, Tnfunctions>::natural_coordinates_analytical(
+    QuadrilateralGIMPElement<Tdim>::natural_coordinates_analytical(
         const VectorDim& point,
         const Eigen::MatrixXd& nodal_coordinates) const {
   // Local point coordinates

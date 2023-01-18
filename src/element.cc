@@ -25,7 +25,9 @@ static Register<mpm::Element<2>, mpm::QuadrilateralElement<2, 9>> quad9(
     "ED2Q9");
 
 // Quadrilateral 4-node-base GIMP element
-static Register<mpm::Element<2>, mpm::QuadrilateralGIMPElement<2, 16>>
+//static Register<mpm::Element<2>, mpm::QuadrilateralGIMPElement<2, 16>>
+//    quad_gimp16("ED2Q16G");
+static Register<mpm::Element<2>, mpm::QuadrilateralGIMPElement<2>>
     quad_gimp16("ED2Q16G");
 
 // Hexahedron 8-noded element

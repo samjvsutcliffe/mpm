@@ -382,6 +382,8 @@ class Particle : public ParticleBase<Tdim> {
   using ParticleBase<Tdim>::cell_id_;
   //! Nodes
   using ParticleBase<Tdim>::nodes_;
+  //! Nodes
+  using ParticleBase<Tdim>::nodes_local_ids_;
   //! Status
   using ParticleBase<Tdim>::status_;
   //! Material

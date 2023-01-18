@@ -243,11 +243,13 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Shape function
   std::shared_ptr<mpm::Element<Tdim>> element =
       Factory<mpm::Element<Tdim>>::instance()->create(cell_type);
+  console_->info("Element constructed sucessfully");
 
   // Create cells from file
   bool cell_status =
       mesh_->create_cells(gid,                                  // global id
-                          element,                              // element tyep
+                          cell_type,
+//                          element,                              // element tyep
                           mesh_io->read_mesh_cells(mesh_file),  // Node ids
                           check_duplicates);                    // Check dups
 

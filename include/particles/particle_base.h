@@ -345,6 +345,8 @@ class ParticleBase {
   std::shared_ptr<Cell<Tdim>> cell_;
   //! Vector of nodal pointers
   std::vector<std::shared_ptr<NodeBase<Tdim>>> nodes_;
+  //! Vector of nodal pointers
+  std::vector<int> nodes_local_ids_;
   //! Material
   std::vector<std::shared_ptr<Material<Tdim>>> material_;
   //! Unsigned material id

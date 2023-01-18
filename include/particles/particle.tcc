@@ -307,7 +307,10 @@ bool mpm::Particle<Tdim>::assign_cell(
       dn_dx_centroid_ = cell_->dn_dx_centroid();
       // Copy nodal pointer to cell
       nodes_.clear();
+      //for (auto& cell_id : cell_->neighbours()) {
+      //}
       nodes_ = cell_->nodes();
+      nodes_local_ids_ = cell_->nodes_local_ids();
 
       // Compute reference location of particle
       bool xi_status = this->compute_reference_location();
@@ -342,6 +345,7 @@ bool mpm::Particle<Tdim>::assign_cell_xi(
       // Copy nodal pointer to cell
       nodes_.clear();
       nodes_ = cell_->nodes();
+      nodes_local_ids_ = cell_->nodes_local_ids();
 
       // Assign the reference location of particle
       bool xi_nan = false;
@@ -443,13 +447,17 @@ void mpm::Particle<Tdim>::compute_shapefn() noexcept {
 
   // Zero matrix
   Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
-
+  //console_->info("Shape of nodal coordinates {},{}",
+  //               cell_->nodal_coordinates().rows(),
+  //               cell_->nodal_coordinates().cols());
   // Compute shape function of the particle
   shapefn_ = element->shapefn(this->xi_, this->natural_size_, zero);
+  //console_->info("Shape of shapefn {},{}", shapefn_.rows(), shapefn_.cols());
 
   // Compute dN/dx
   dn_dx_ = element->dn_dx(this->xi_, cell_->nodal_coordinates(),
                           this->natural_size_, zero);
+  //console_->info("Shape of dn/dx {},{}", dn_dx_.rows(), dn_dx_.cols());
 }
 
 // Assign volume to the particle
@@ -524,10 +532,11 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes() noexcept {
 
   // Map mass and momentum to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                           mass_ * shapefn_[i]);
+                           mass_ * shapefn_[mapped_node]);
     nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i] * velocity_);
+                               mass_ * shapefn_[mapped_node] * velocity_);
   }
 }
 
@@ -542,7 +551,8 @@ void mpm::Particle<Tdim>::map_multimaterial_mass_momentum_to_nodes() noexcept {
 
   // Map mass and momentum to nodal property taking into account the material id
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodal_mass(0, 0) = mass_ * shapefn_[i];
+    const int mapped_node = i;//this->nodes_local_ids_[i];
+    nodal_mass(0, 0) = mass_ * shapefn_[mapped_node];
     nodes_[i]->update_property(true, "masses", nodal_mass, this->material_id(),
                                1);
     nodes_[i]->update_property(true, "momenta", velocity_ * nodal_mass,
@@ -559,7 +569,8 @@ void mpm::Particle<Tdim>::map_multimaterial_displacements_to_nodes() noexcept {
   // Map displacements to nodal property and divide it by the respective
   // nodal-material mass
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const auto& displacement = mass_ * shapefn_[i] * displacement_;
+    const int mapped_node = i;//this->nodes_local_ids_[i];
+    const auto& displacement = mass_ * shapefn_[mapped_node] * displacement_;
     nodes_[i]->update_property(true, "displacements", displacement,
                                this->material_id(), Tdim);
   }
@@ -576,7 +587,8 @@ void mpm::Particle<
   // the gradient of the particle volume
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     Eigen::Matrix<double, Tdim, 1> gradient;
-    for (unsigned j = 0; j < Tdim; ++j) gradient[j] = volume_ * dn_dx_(i, j);
+    const int mapped_node = i;//this->nodes_local_ids_[i];
+    for (unsigned j = 0; j < Tdim; ++j) gradient[j] = volume_ * dn_dx_(mapped_node, j);
     nodes_[i]->update_property(true, "domain_gradients", gradient,
                                this->material_id(), Tdim);
   }
@@ -590,8 +602,9 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 1, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(i, 0) * vel[0];
+    strain_rate[0] += dn_dx(mapped_node, 0) * vel[0];
   }
 
   if (std::fabs(strain_rate(0)) < 1.E-15) strain_rate[0] = 0.;
@@ -606,10 +619,11 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(i, 0) * vel[0];
-    strain_rate[1] += dn_dx(i, 1) * vel[1];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+    strain_rate[0] += dn_dx(mapped_node, 0) * vel[0];
+    strain_rate[1] += dn_dx(mapped_node, 1) * vel[1];
+    strain_rate[3] += dn_dx(mapped_node, 1) * vel[0] + dn_dx(mapped_node, 0) * vel[1];
   }
 
   if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
@@ -626,13 +640,14 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(i, 0) * vel[0];
-    strain_rate[1] += dn_dx(i, 1) * vel[1];
-    strain_rate[2] += dn_dx(i, 2) * vel[2];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
-    strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
-    strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+    strain_rate[0] += dn_dx(mapped_node, 0) * vel[0];
+    strain_rate[1] += dn_dx(mapped_node, 1) * vel[1];
+    strain_rate[2] += dn_dx(mapped_node, 2) * vel[2];
+    strain_rate[3] += dn_dx(mapped_node, 1) * vel[0] + dn_dx(mapped_node, 0) * vel[1];
+    strain_rate[4] += dn_dx(mapped_node, 2) * vel[1] + dn_dx(mapped_node, 1) * vel[2];
+    strain_rate[5] += dn_dx(mapped_node, 2) * vel[0] + dn_dx(mapped_node, 0) * vel[2];
   }
 
   for (unsigned i = 0; i < strain_rate.size(); ++i)
@@ -677,9 +692,11 @@ void mpm::Particle<Tdim>::compute_stress(float dt_) noexcept {
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
   // Compute nodal body forces
-  for (unsigned i = 0; i < nodes_.size(); ++i)
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                     (pgravity * mass_ * shapefn_(i)));
+                                     (pgravity * mass_ * shapefn_(mapped_node)));
+  }
 }
 
 //! Map internal force
@@ -689,7 +706,8 @@ inline void mpm::Particle<1>::map_internal_force() noexcept {
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 1, 1> force;
-    force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
+    const int mapped_node = i;//this->nodes_local_ids_[i];
+    force[0] = -1. * dn_dx_(mapped_node, 0) * volume_ * stress_[0];
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
@@ -702,8 +720,9 @@ inline void mpm::Particle<2>::map_internal_force() noexcept {
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 2, 1> force;
-    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
-    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
+    const int mapped_node = i;//this->nodes_local_ids_[i];
+    force[0] = dn_dx_(mapped_node, 0) * stress_[0] + dn_dx_(mapped_node, 1) * stress_[3];
+    force[1] = dn_dx_(mapped_node, 1) * stress_[1] + dn_dx_(mapped_node, 0) * stress_[3];
 
     force *= -1. * this->volume_;
 
@@ -717,15 +736,16 @@ inline void mpm::Particle<3>::map_internal_force() noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 3, 1> force;
-    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
-               dn_dx_(i, 2) * stress_[5];
+    force[0] = dn_dx_(mapped_node, 0) * stress_[0] + dn_dx_(mapped_node, 1) * stress_[3] +
+               dn_dx_(mapped_node, 2) * stress_[5];
 
-    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
-               dn_dx_(i, 2) * stress_[4];
+    force[1] = dn_dx_(mapped_node, 1) * stress_[1] + dn_dx_(mapped_node, 0) * stress_[3] +
+               dn_dx_(mapped_node, 2) * stress_[4];
 
-    force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
-               dn_dx_(i, 0) * stress_[5];
+    force[2] = dn_dx_(mapped_node, 2) * stress_[2] + dn_dx_(mapped_node, 1) * stress_[4] +
+               dn_dx_(mapped_node, 0) * stress_[5];
 
     force *= -1. * this->volume_;
 
@@ -768,9 +788,11 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_traction_force() noexcept {
   if (this->set_traction_) {
     // Map particle traction forces to nodes
-    for (unsigned i = 0; i < nodes_.size(); ++i)
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      const int mapped_node = i;//this->nodes_local_ids_[i];
       nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                       (shapefn_[i] * traction_));
+                                       (shapefn_[mapped_node] * traction_));
+    }
   }
 }
 
@@ -784,18 +806,22 @@ void mpm::Particle<Tdim>::compute_updated_position(
   Eigen::Matrix<double, Tdim, 1> nodal_velocity =
       Eigen::Matrix<double, Tdim, 1>::Zero();
 
-  for (unsigned i = 0; i < nodes_.size(); ++i)
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     nodal_velocity +=
-        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+        shapefn_[mapped_node] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+  }
 
   // Acceleration update
   if (!velocity_update) {
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
-    for (unsigned i = 0; i < nodes_.size(); ++i)
-      nodal_acceleration +=
-          shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      const int mapped_node = i;//this->nodes_local_ids_[i];
+      nodal_acceleration += shapefn_[mapped_node] *
+                            nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
+    }
 
     // Update particle velocity from interpolated nodal acceleration
     this->velocity_ += nodal_acceleration * dt;
@@ -822,9 +848,12 @@ bool mpm::Particle<Tdim>::map_pressure_to_nodes(unsigned phase) noexcept {
       (state_variables_[phase].find("pressure") !=
        state_variables_[phase].end())) {
     // Map particle pressure to nodes
-    for (unsigned i = 0; i < nodes_.size(); ++i)
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      const int mapped_node = i;//this->nodes_local_ids_[i];
       nodes_[i]->update_mass_pressure(
-          phase, shapefn_[i] * mass_ * state_variables_[phase]["pressure"]);
+          phase,
+          shapefn_[mapped_node] * mass_ * state_variables_[phase]["pressure"]);
+    }
 
     status = true;
   }
@@ -844,8 +873,10 @@ bool mpm::Particle<Tdim>::compute_pressure_smoothing(unsigned phase) noexcept {
 
     double pressure = 0.;
     // Update particle pressure to interpolated nodal pressure
-    for (unsigned i = 0; i < this->nodes_.size(); ++i)
-      pressure += shapefn_[i] * nodes_[i]->pressure(phase);
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      const int mapped_node = i;//this->nodes_local_ids_[i];
+      pressure += shapefn_[mapped_node] * nodes_[i]->pressure(phase);
+    }
 
     state_variables_[phase]["pressure"] = pressure;
     status = true;
@@ -1177,8 +1208,9 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_vorticity_rate(
   Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
-    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+    vorticity[3] += dn_dx(mapped_node, 1) * vel[0] - dn_dx(mapped_node, 0) * vel[1];
   }
 
   for (unsigned i = 3; i < vorticity.size(); ++i)
@@ -1193,10 +1225,11 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_vorticity_rate(
   Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
-    vorticity[4] += dn_dx(i, 2) * vel[1] - dn_dx(i, 1) * vel[2];
-    vorticity[5] += dn_dx(i, 2) * vel[0] - dn_dx(i, 0) * vel[2];
+    vorticity[3] += dn_dx(mapped_node, 1) * vel[0] - dn_dx(mapped_node, 0) * vel[1];
+    vorticity[4] += dn_dx(mapped_node, 2) * vel[1] - dn_dx(mapped_node, 1) * vel[2];
+    vorticity[5] += dn_dx(mapped_node, 2) * vel[0] - dn_dx(mapped_node, 0) * vel[2];
   }
 
   for (unsigned i = 3; i < vorticity.size(); ++i)
