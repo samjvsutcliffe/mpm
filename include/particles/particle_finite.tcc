@@ -736,7 +736,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   //Update size
   Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
   for(int i = 0; i < Tdim;++i){
-      //natural_size_(i) *= dlength(i,i);
+      natural_size_(i) = natural_size_0_ (i) * dlength(i,i);
   }
   dvolumetric_strain_ = df.determinant() - 1;
   //Volume ratio can be determined from det df
