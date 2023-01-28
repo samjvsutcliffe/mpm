@@ -88,6 +88,9 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
   // Iterate over each particle to compute stress
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
+
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::apply_damage, std::placeholders::_1));
 }
 
 //! Pressure smoothing
