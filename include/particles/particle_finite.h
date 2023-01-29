@@ -399,6 +399,8 @@ class ParticleFinite : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> stretch_tensor_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
+  //! Stresses
+  Eigen::Matrix<double, 6, 1> stress_kirchoff_;
   //! Strains
   Eigen::Matrix<double, 6, 1> strain_;
   //! dvolumetric strain

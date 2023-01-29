@@ -76,7 +76,7 @@ double mpm::Glen<tdim>::compute_glen_viscosity_strain(
     const Eigen::Array<double,6,1> second_invar_mult = (Eigen::Array<double, 6, 1>() << 0.5, 0.5, 0.5, 1, 1, 1).finished();
     Eigen::Matrix<double, 6, 1> dev_strain = strain;
     for (int i = 0; i < 3; ++i) {
-      dev_strain(i) -= trace_strain;
+      //dev_strain(i) -= trace_strain;
     }
     double effective_strain =
         (dev_strain.dot((dev_strain.array() * second_invar_mult).matrix()));

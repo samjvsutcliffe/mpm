@@ -245,6 +245,7 @@ void mpm::ParticleFinite<Tdim>::initialise() {
   strain_rate_.setZero();
   strain_.setZero();
   stress_.setZero();
+  stress_kirchoff_.setZero();
   traction_.setZero();
   velocity_.setZero();
   volume_ = std::numeric_limits<double>::max();
@@ -701,7 +702,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
 
   //Logarithmic strain increment
   //Voight to matrix deformation increment
-  stress_ = stress_ * deformation_gradient_.determinant();
+  //stress_ = stress_ * deformation_gradient_.determinant();
   Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + this->voigt_to_matrix(dstrain_);
   //Update deformation gradient
   deformation_gradient_ = df * deformation_gradient_;
@@ -801,16 +802,15 @@ void mpm::ParticleFinite<Tdim>::compute_stress(const float dt_) noexcept {
   assert(this->material() != nullptr);
   // Calculate stress
   state_variables_[mpm::ParticlePhase::Solid]["dt"] = dt_;
-  //Previous steps kirchoff stress
-  this->stress_ =
+  //Use our previous kirchoff stress to increment using our log strains
+  this->stress_kirchoff_ =
       (this->material())
-          ->compute_stress(stress_, dstrain_, this,
+          ->compute_stress(stress_kirchoff_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
-  //New kirchoff stress
-  //Turn into cauchy of end 
   //this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
   //this->stress_ = objectify_stress_logspin(this->stress_);
-  this->stress_ = this->stress_ / deformation_gradient_.determinant();
+  //Compute our cauchy stress
+  this->stress_ = this->stress_kirchoff_ / deformation_gradient_.determinant();
   //this->stress_ = this->stress_;
 }
 
