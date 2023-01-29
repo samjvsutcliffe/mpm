@@ -222,6 +222,12 @@ class ParticleBase {
   //! Compute stress
   virtual void compute_stress() noexcept = 0;
 
+  //! Compute damage increment
+  virtual void compute_damage_increment(double dt,bool local) noexcept = 0;
+
+  //! Apply damage increment
+  virtual void apply_damage(double dt) noexcept = 0;
+
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;
 

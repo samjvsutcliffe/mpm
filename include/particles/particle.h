@@ -10,6 +10,7 @@
 #include "cell.h"
 #include "logger.h"
 #include "particle_base.h"
+#include <unsupported/Eigen/MatrixFunctions>
 
 namespace mpm {
 
@@ -191,8 +192,28 @@ class Particle : public ParticleBase<Tdim> {
     this->stress_ = stress;
   }
 
+  Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat) {
+      return (Eigen::Matrix<double,6,1>() <<
+              mat(0,0), mat(1,1),mat(2,2),
+              mat(0,1), mat(1,2),mat(0,2)
+              ).finished();
+    }
+    
+  Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt) {
+      return (Eigen::Matrix3d() <<
+              voigt(0), voigt(3), voigt(5),
+              voigt(3), voigt(1), voigt(4),
+              voigt(5), voigt(4), voigt(2)).finished();
+    }
+
   //! Compute stress
   void compute_stress() noexcept override;
+
+  //! Compute damage increment
+  void compute_damage_increment(double dt, bool local) noexcept override;
+
+  //! Apply damage increment
+  void apply_damage(double dt) noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
@@ -382,6 +403,12 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, Tdim, 1> velocity_;
   //! Displacement
   Eigen::Matrix<double, Tdim, 1> displacement_;
+  //! Local damage increment
+  double damage_inc_local_{0.}; 
+  //! True damage increment
+  double damage_inc_{0.}; 
+  //! Local damage
+  double damage_{0.}; 
   //! Particle velocity constraints
   std::map<unsigned, double> particle_velocity_constraints_;
   //! Set traction
