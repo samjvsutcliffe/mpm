@@ -9,7 +9,7 @@
 
 #include "cell.h"
 #include "logger.h"
-#include "particle_base.h"
+#include "particle.h"
 #include <unsupported/Eigen/MatrixFunctions>
 
 namespace mpm {
@@ -47,11 +47,6 @@ class ParticleDamage : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleDamage& operator=(const ParticleDamage<Tdim>&) = delete;
 
-  //! Initialise particle from HDF5 data
-  //! \param[in] particle HDF5 data of particle
-  //! \retval status Status of reading HDF5 particle
-  bool initialise_particle(const HDF5Particle& particle) override;
-
   //! Initialise properties
   void initialise() override;
 
@@ -63,6 +58,11 @@ class ParticleDamage : public Particle<Tdim> {
 
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2D_DAMAGE" : "P3D_DAMAGE"; }
+ protected:
+  //! Logger
+  std::unique_ptr<spdlog::logger> console_;
+  //! Stress
+  //using Particle<Tdim>::stress_;
 
  private:
   double damage_inc_local_{0.}; 

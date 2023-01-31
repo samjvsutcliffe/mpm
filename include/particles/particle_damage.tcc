@@ -33,14 +33,15 @@ mpm::ParticleDamage<Tdim>::ParticleDamage(Index id, const VectorDim& coord, bool
 // Initialise particle properties
 template <unsigned Tdim>
 void mpm::ParticleDamage<Tdim>::initialise() {
+    mpm::Particle<Tdim>::initialise();
     damage_ = 0;
-    damage_local_inc_ = 0;
+    damage_inc_local_ = 0;
     damage_inc_ = 0;
 }
 
 //! Compute damage increment
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_damage_increment(double dt,bool local) noexcept {
+void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) noexcept {
     Eigen::Matrix<double,6,1> stress = this->stress();
     double inc = 0;
     //Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
@@ -65,7 +66,8 @@ void mpm::Particle<Tdim>::compute_damage_increment(double dt,bool local) noexcep
 
 //! Apply damage increment
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::apply_damage(double dt) noexcept {
+void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
+  Eigen::Matrix<double,6,1> stress = this->stress();
   damage_ += damage_inc_ * dt;
   damage_ = std::min(std::max(damage_, 0.0), 1.0);
   if (damage_ > 0.) {
@@ -73,6 +75,6 @@ void mpm::Particle<Tdim>::apply_damage(double dt) noexcept {
     //es.compute(stress.adjoint());
     //auto l = es.eigenvalues();
     //auto v = es.eigenvectors();
-    stress_ = stress_ * (1.0 - damage_);
+    stress = stress * (1.0 - damage_);
   }
 }

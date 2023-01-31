@@ -193,6 +193,12 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute stress
   void compute_stress() noexcept override;
+  
+  //! Compute damage increment
+  void compute_damage_increment(double dt, bool local) noexcept override { };
+
+  //! Apply damage increment
+  void apply_damage(double dt) noexcept override { };
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
