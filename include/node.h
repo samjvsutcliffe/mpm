@@ -192,6 +192,13 @@ class Node : public NodeBase<Tdim> {
   bool compute_acceleration_velocity_cundall(
       unsigned phase, double dt, double damping_factor) noexcept override;
 
+  //! Compute acceleration and velocity with viscous damping factor
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Damping factor
+  bool compute_acceleration_velocity_viscous(
+      unsigned phase, double dt, double damping_factor) noexcept override;
+
   //! Assign velocity constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of velocity constraint

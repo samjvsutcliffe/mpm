@@ -6,6 +6,7 @@
 #endif
 
 #include "mpm_base.h"
+#include <chrono>
 
 namespace mpm {
 
@@ -81,6 +82,9 @@ class MPMExplicit : public MPMBase<Tdim> {
   bool pressure_smoothing_{false};
   //! Interface
   bool interface_{false};
+  
+  bool time_init = false;
+  std::chrono::time_point<std::chrono::high_resolution_clock> time_prev_output_;
 
 };  // MPMExplicit class
 }  // namespace mpm

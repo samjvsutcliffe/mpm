@@ -99,7 +99,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_concentrated_force(
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::apply_concentrated_force(
     unsigned phase, double current_time) {
-  const double scalar =
+  const double scalar = volume(phase) * 
       (force_function_ != nullptr) ? force_function_->value(current_time) : 1.0;
   this->update_external_force(true, phase,
                               scalar * concentrated_force_.col(phase));
@@ -265,6 +265,41 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
     this->acceleration_.col(phase) =
         (unbalanced_force - damping_factor * unbalanced_force.norm() *
                                 this->velocity_.col(phase).cwiseSign()) /
+        this->mass_(phase);
+
+    // Apply friction constraints
+    this->apply_friction_constraints(dt);
+
+    // Velocity += acceleration * dt
+    this->velocity_.col(phase) += this->acceleration_.col(phase) * dt;
+    // Apply velocity constraints, which also sets acceleration to 0,
+    // when velocity is set.
+    this->apply_velocity_constraints();
+
+    // Set a threshold
+    for (unsigned i = 0; i < Tdim; ++i)
+      if (std::abs(velocity_.col(phase)(i)) < tolerance)
+        velocity_.col(phase)(i) = 0.;
+    for (unsigned i = 0; i < Tdim; ++i)
+      if (std::abs(acceleration_.col(phase)(i)) < tolerance)
+        acceleration_.col(phase)(i) = 0.;
+    status = true;
+  }
+  return status;
+}
+
+//! Compute acceleration and velocity with viscous damping factor
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_viscous(
+    unsigned phase, double dt, double damping_factor) noexcept {
+  bool status = false;
+  const double tolerance = 1.0E-15;
+  if (mass_(phase) > tolerance) {
+    // acceleration = (unbalaced force / mass)
+    auto unbalanced_force =
+        this->external_force_.col(phase) + this->internal_force_.col(phase);
+    this->acceleration_.col(phase) =
+        (unbalanced_force - damping_factor * this->velocity_.col(phase)) /
         this->mass_(phase);
 
     // Apply friction constraints

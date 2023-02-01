@@ -157,8 +157,16 @@ bool mpm::MPMExplicit<Tdim>::solve() {
                                 set_node_concentrated_force_);
 
     // Particle kinematics
-    mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
-                                             damping_factor_);
+    if (damping_type_ == mpm::Damping::Cundall)
+    {
+        mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall", damping_factor_);
+    }
+    else if (damping_type_ == mpm::Damping::Viscous) {
+        mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Viscous", damping_factor_);
+    }
+    else {
+        mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "", 0);
+    }
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
@@ -184,6 +192,19 @@ bool mpm::MPMExplicit<Tdim>::solve() {
       // Partio outputs
       this->write_partio(this->step_, this->nsteps_);
 #endif
+      if(time_init)
+      {
+          auto now = std::chrono::high_resolution_clock::now();
+          auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(now-time_prev_output_);
+          double ms = dur.count()*1e-3;
+          console_->info("Time per output {}ms", ms);
+          console_->info("Throughput {} steps/s", output_steps_/ms);
+          time_prev_output_ = now;
+      }
+      else{
+          time_prev_output_ = std::chrono::high_resolution_clock::now();
+          time_init = true;
+      }
     }
   }
   auto solver_end = std::chrono::steady_clock::now();

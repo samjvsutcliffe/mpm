@@ -184,6 +184,13 @@ class NodeBase {
   virtual bool compute_acceleration_velocity_cundall(
       unsigned phase, double dt, double damping_factor) noexcept = 0;
 
+  //! Compute acceleration and velocity with viscous damping factor
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Damping factor
+  virtual bool compute_acceleration_velocity_viscous(
+      unsigned phase, double dt, double damping_factor) noexcept = 0;
+
   //! Assign velocity constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of velocity constraint
@@ -252,6 +259,14 @@ class NodeBase {
 
   //! Compute multimaterial normal unit vector
   virtual void compute_multimaterial_normal_unit_vector() = 0;
+
+  //! Update fluid mass at the node
+  //! \param[in] update A boolean to update (ture) or assign (false)
+  //! \param[in] mass Mass
+//  virtual void update_fluid_mass(bool update, double mass) noexcept = 0;
+
+  //! Return fluid mass used for applying non-conforming boundary
+//  virtual double mass_fluid() noexcept = 0;
 
 };  // NodeBase class
 }  // namespace mpm
