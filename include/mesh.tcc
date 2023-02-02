@@ -1909,6 +1909,7 @@ bool mpm::Mesh<Tdim>::read_particles_file(const std::shared_ptr<mpm::IO>& io,
                                           unsigned pset_id) {
   // Particle type
   auto particle_type = generator["particle_type"].template get<std::string>();
+  console_->info("Particle type:{}",particle_type);
 
   // File location
   auto file_loc =

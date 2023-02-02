@@ -339,7 +339,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval pack size of serialized object
   int compute_pack_size() const;
 
- private:
+ protected:
   //! particle id
   using ParticleBase<Tdim>::id_;
   //! coordinates
@@ -402,6 +402,7 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::MatrixXd dn_dx_centroid_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+ protected:
   //! Map of scalar properties
   tsl::robin_map<std::string, std::function<double()>> scalar_properties_;
   //! Map of vector properties
@@ -409,6 +410,7 @@ class Particle : public ParticleBase<Tdim> {
   //! Map of tensor properties
   tsl::robin_map<std::string, std::function<Eigen::VectorXd()>>
       tensor_properties_;
+ private:
   //! Pack size
   unsigned pack_size_{0};
 

@@ -2,7 +2,7 @@
 template <unsigned Tdim>
 mpm::ParticleDamage<Tdim>::ParticleDamage(Index id, const VectorDim& coord)
     : mpm::Particle<Tdim>(id, coord) {
-  //this->initialise();
+  this->initialise();
   //// Clear cell ptr
   //cell_ = nullptr;
   //// Nodes
@@ -33,10 +33,18 @@ mpm::ParticleDamage<Tdim>::ParticleDamage(Index id, const VectorDim& coord, bool
 // Initialise particle properties
 template <unsigned Tdim>
 void mpm::ParticleDamage<Tdim>::initialise() {
-    mpm::Particle<Tdim>::initialise();
+    //mpm::Particle<Tdim>::initialise();
     damage_ = 0;
     damage_inc_local_ = 0;
     damage_inc_ = 0;
+    undamaged_stress_.setZero();
+    this->scalar_properties_["damage"] = [&]() { return damage(); };
+    
+    //for(const auto& key_value : this->scalar_properties_) {
+    //    console_->info("Keys:{}",key_value.first);
+    //    //std::cout << "{" << key_value.first  << "}" << std::endl;
+    //}
+    //scalar_properties_["damage"] = [&]() { return 0.0; };
 }
 
 //! Compute damage increment
@@ -44,18 +52,23 @@ template <unsigned Tdim>
 void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) noexcept {
     Eigen::Matrix<double,6,1> stress = this->stress();
     double inc = 0;
-    //Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
-    //es.compute(voigt_to_matrix(stress));
-    //double s1 = es.eigenvalues()[0];
-    //double critical_stress =
-    //    (this->material())->properties_["critical_stress"];
-    //double damage_rate_ = (this->material())->properties_["damage_rate"];
-    //if (s1 > critical_stress)
-    //{
-    //  inc += (std::max(0.0,s1) / critical_stress) * damage_rate_;
-    //}
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
+    es.compute(this->voigt_to_matrix(stress));
+    double s1 = es.eigenvalues().maxCoeff();
+    double critical_stress =
+        (this->material())->template property<double>("critical_stress");
+    double damage_rate = (this->material())->template property<double>("damage_rate");
+    //double critical_stress = 1e5;
+    //double damage_rate = 0.1;
+    if (s1 > critical_stress*1e-3)
+    {
+      inc += (std::max(0.0,s1) / critical_stress) * damage_rate;
+    }
 
-    if (local)
+    //If we are doing a local damage update, then our final damage increment is our current local one
+    //If local: set inc to local damage
+    //If nonlocal: store inc in local inc
+    if (!local)
     {
       damage_inc_local_ = inc;
     }
@@ -64,17 +77,36 @@ void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) n
     }
 }
 
+// Compute stress
+template <unsigned Tdim>
+void mpm::ParticleDamage<Tdim>::compute_stress() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+  // Calculate stress
+  undamaged_stress_ =
+      (this->material())
+          ->compute_stress(undamaged_stress_, this->dstrain_, this,
+                           &this->state_variables_[mpm::ParticlePhase::Solid]);
+  this->stress_ = undamaged_stress_;
+}
+
 //! Apply damage increment
 template <unsigned Tdim>
 void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
-  Eigen::Matrix<double,6,1> stress = this->stress();
+  Eigen::Matrix<double,6,1> & stress = this->stress_;
   damage_ += damage_inc_ * dt;
   damage_ = std::min(std::max(damage_, 0.0), 1.0);
   if (damage_ > 0.) {
-    //SelfAdjointEigenSolver<Matrix3d> es;
-    //es.compute(stress.adjoint());
-    //auto l = es.eigenvalues();
-    //auto v = es.eigenvectors();
-    stress = stress * (1.0 - damage_);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
+    es.compute(this->voigt_to_matrix(stress));
+    Eigen::Matrix<double,3,1> l = es.eigenvalues();
+    Eigen::Matrix<double,3,3> v = es.eigenvectors();
+    for(int i = 0;i < 3;++i){
+        if(l[i] > 0.0){
+            l[i] = l[i] * (1.0 - damage_);
+        }
+    }
+    //stress = stress * (1.0 - damage_);
+    this->stress_ = this->matrix_to_voigt(v * l.asDiagonal() * v.transpose());
   }
 }

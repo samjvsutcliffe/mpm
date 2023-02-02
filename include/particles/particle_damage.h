@@ -47,6 +47,12 @@ class ParticleDamage : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleDamage& operator=(const ParticleDamage<Tdim>&) = delete;
 
+  //! Compute stress
+  void compute_stress() noexcept override;
+
+  //! Return damage at a particle
+  double damage() const { return damage_; }
+
   //! Initialise properties
   void initialise() override;
 
@@ -58,18 +64,28 @@ class ParticleDamage : public Particle<Tdim> {
 
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2D_DAMAGE" : "P3D_DAMAGE"; }
+  //using Particle<Tdim>::voigt_to_matrix;
  protected:
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Stress
   //using Particle<Tdim>::stress_;
+  //using Particle<Tdim>::scalar_properties_;
+  //! Material
+  using ParticleBase<Tdim>::material_;
+  //! Material id
+  using ParticleBase<Tdim>::material_id_;
+  //! State variables
+  using ParticleBase<Tdim>::state_variables_;
 
- private:
+ protected:
   double damage_inc_local_{0.}; 
   //! True damage increment
   double damage_inc_{0.}; 
   //! Local damage
   double damage_{0.}; 
+  //! Stresses
+  Eigen::Matrix<double, 6, 1> undamaged_stress_;
 
 };  // Particle class
 }  // namespace mpm

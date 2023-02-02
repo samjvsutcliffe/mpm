@@ -1,6 +1,7 @@
 #include "material.h"
 #include "bingham.h"
 #include "linear_elastic.h"
+#include "linear_elastic_damage.h"
 #include "modified_cam_clay.h"
 #include "mohr_coulomb.h"
 #include "newtonian.h"
@@ -55,3 +56,11 @@ static Register<mpm::Material<2>, mpm::NorSand<2>, unsigned, const Json&>
 // Norsand 3D
 static Register<mpm::Material<3>, mpm::NorSand<3>, unsigned, const Json&>
     nor_sand_3d("NorSand3D");
+
+// LinearElasticDamage 2D
+static Register<mpm::Material<2>, mpm::LinearElasticDamage<2>, unsigned, const Json&>
+    linear_elastic_damage_2d("LinearElasticDamage2D");
+
+// LinearElasticDamage 3D
+static Register<mpm::Material<3>, mpm::LinearElasticDamage<3>, unsigned, const Json&>
+    linear_elastic_damage_3d("LinearElasticDamage3D");
