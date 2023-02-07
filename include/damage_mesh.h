@@ -47,9 +47,16 @@ namespace mpm {
 //A damage node, of size h defined by the structured damage Mesh
 template <unsigned Tdim>
 struct DamageNode {
- public:
-  SpinMutex node_mutex_;
+ void reset(){
+     local_list.empty();
+ }
+ void AddParticle(std::weak_ptr<mpm::ParticleBase> && p){
+     node_mutex_.lock();
+     local_list.emplace_back(std::move(p));
+     node_mutex_.unlock();
+ }
  protected:
+  SpinMutex node_mutex_;
   std::vector<std::weak_ptr<mpm::ParticleBase>> local_list;
 };
 
@@ -99,14 +106,25 @@ class DamageMesh {
     }
   };
 
+  template <typename Toper>
+  void iterate_over_nodes(Toper oper);
+#pragma omp parallel for schedule(runtime)
+      for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) oper(*nitr);
+    }
+
+  void ResetMesh(){
+      iterate_over_nodes(
+          std::bind(&mpm::DamageNode<Tdim>::reset, std::placeholders::_1));
+  }
 
   void PopulateMesh(Vector<ParticleBase<Tdim>>& particles) {
 
   };
-  void AddParticleToMesh(ParticleBase<Tdim>& particle) {
+  void AddParticleToMesh(std::shared_ptr<ParticleBase<Tdim>> & particle) {
     auto position = particle->position;
-
-
+    Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
+    DamageNode & node GetNode(index);
+    node.AddParticle(std::weak_ptr(p));
   };
 
  private:
@@ -115,7 +133,7 @@ class DamageMesh {
   std::shared_ptr<mpm::NodalProperties> nodal_properties_{nullptr};
   double resolution{1};
   Eigen::Matrix<int, Tdim, 1> mesh_size;
-  std::vector<DamageNode> raw_data_;
+  std::vector<DamageNode> nodes_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Maximum number of halo nodes
@@ -127,4 +145,4 @@ class DamageMesh {
 
 #include "damage_mesh.tcc"
 
-#endif  // MPM_DAMAGE_MESH_H_
+#endifif  // MPM_DAMAGE_MESH_H_
