@@ -39,6 +39,25 @@ bool mpm::Mesh<Tdim>::create_nodes(mpm::Index gnid,
       else
         throw std::runtime_error("Addition of node to mesh failed!");
     }
+    //VectorDim min = std::reduce(coordinates.begin(),coordinates.end(),
+    //        [](const auto & lhs, const auto & rhs){
+    //            return lhs.cwiseMin(rhs);
+    //        });
+    //VectorDim max = std::reduce(coordinates.begin(),coordinates.end(),
+    //        [](const auto & lhs, const auto & rhs){
+    //            return lhs.cwiseMax(rhs);
+    //        });
+    VectorDim min = coordinates[0];
+    VectorDim max = coordinates[0];
+    for (const auto& node_coordinates : coordinates) {
+        min = min.cwiseMin(node_coordinates);
+        max = max.cwiseMax(node_coordinates);
+    }
+    //We should be reading the damage resolution from the input file
+    const double damage_resolution = 10;
+    damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>(min,max, damage_resolution);
+    //damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>();
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

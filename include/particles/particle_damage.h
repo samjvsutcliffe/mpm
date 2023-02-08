@@ -62,6 +62,9 @@ class ParticleDamage : public Particle<Tdim> {
   //! Apply damage increment
   void apply_damage(double dt) noexcept override;
 
+  //! Delocalise damage
+  void delocalise_damage(ParticleBase<Tdim> & pother) noexcept override;
+
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2D_DAMAGE" : "P3D_DAMAGE"; }
   //using Particle<Tdim>::voigt_to_matrix;

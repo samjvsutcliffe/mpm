@@ -48,16 +48,24 @@ namespace mpm {
 template <unsigned Tdim>
 struct DamageNode {
  void reset(){
-     local_list.empty();
+//     local_list.empty();
  }
- void AddParticle(std::weak_ptr<mpm::ParticleBase> && p){
-     node_mutex_.lock();
-     local_list.emplace_back(std::move(p));
-     node_mutex_.unlock();
+ void AddParticle(std::weak_ptr<mpm::ParticleBase<Tdim>> && p){
+//     node_mutex_.lock();
+//     local_list.emplace_back(std::move(p));
+//     node_mutex_.unlock();
  }
+  template <typename Toper>
+  inline void iterate_over_particles(Toper oper){
+      //for(auto & p : local_list){
+      //    oper(*p);
+      //}
+    };
+  DamageNode() = default;
+  ~DamageNode() = default;
  protected:
-  SpinMutex node_mutex_;
-  std::vector<std::weak_ptr<mpm::ParticleBase>> local_list;
+  //SpinMutex node_mutex_;
+  //std::vector<std::weak_ptr<mpm::ParticleBase<Tdim>>> local_list;
 };
 
 //! DamageMesh class
@@ -69,11 +77,33 @@ class DamageMesh {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
+ private:
+  //! mesh id
+  //! Nodal property pool
+  std::shared_ptr<mpm::NodalProperties> nodal_properties_{nullptr};
+  double resolution_{1};
+  VectorDim mesh_size;
+  VectorDim offset;
+  std::vector<DamageNode<Tdim>> nodes_;
+  //! Logger
+  std::unique_ptr<spdlog::logger> console_;
+  //! Maximum number of halo nodes
+  unsigned nhalo_nodes_{0};
+  //! Maximum number of halo nodes
+  unsigned ncomms_{0};
 
+ public:
   // Construct a mesh with a global unique id
   //! \param[in] id Global mesh id
   //! \param[in] isoparametric DamageMesh is isoparametric
-  DamageMesh(unsigned id);
+  DamageMesh() = default;
+  DamageMesh(VectorDim min, VectorDim max, double resolution) : resolution_{resolution}, nodes_(){
+      offset = min;
+      mesh_size = ((max-min) / resolution_).array().ceil().matrix();
+      ////Default initalise nodes
+      int size = mesh_size.prod();
+      nodes_.resize(size);
+  };
 
   //! Default destructor
   ~DamageMesh() = default;
@@ -84,38 +114,52 @@ class DamageMesh {
   //! Delete assignement operator
   DamageMesh& operator=(const DamageMesh<Tdim>&) = delete;
 
-  int DamageMesh<1>::GetNodeRawIndex(Eigen::Matrix<int, 1, 1> index) {
-    return index[1];
-  }
-  int DamageMesh<2>::GetNodeRawIndex(Eigen::Matrix<int, 2, 1> index) {
-    return index[1] + (index[0] * mesh_size[1]);
-  }
-  int DamageMesh<3>::GetNodeRawIndex(Eigen::Matrix<int, 3, 1> index) {
-    return index[2] + (index[1] * mesh_size[1]) + (index[0] * mesh_size[2] * mesh_size[1]);
-  }
   //! Find nearest node's index
   int PositionToIndex(Eigen::Matrix<double, Tdim, 1> position) {
     Eigen::Matrix<int, Tdim, 1> index =
-        (position / resolution).array().round().matrix();
+        ((position-offset) / resolution_).array().round().matrix();
     return index;
-  }
-
-  const& DamageNode GetNode(Eigen::Matrix<int, Tdim, 1> index) {
-    if (index > Eigen::Zeros()) &&(index < mesh_size) {
-        return raw_data[GetNodeRawIndex(index)];
-    }
+  };
+  //! Caculate real-world position from index
+  VectorDim IndexToPosition(Eigen::Matrix<double, Tdim, 1> index) {
+    return (index * resolution_) + offset;
+  };
+  //Calculate displaced index of a node from its index
+  inline int GetNodeRawIndex(Eigen::Matrix<int, Tdim, 1> index);
+  //! Get a node from an index
+  DamageNode<Tdim>& GetNode(Eigen::Matrix<int, Tdim, 1> index) {
+    //if (index > Eigen::Zeros()) &&(index < mesh_size) {
+    //    return raw_data[GetNodeRawIndex(index)];
+    //}
+    return nodes_[GetNodeRawIndex(index)];
   };
 
   template <typename Toper>
-  void iterate_over_nodes(Toper oper);
+  inline void iterate_over_nodes(Toper oper){
 #pragma omp parallel for schedule(runtime)
       for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) oper(*nitr);
-    }
+    };
+
+  //template <typename Toper,class>
+  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance);
+  //template <typename Toper,class>
+  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance);
+
+  template <typename Toper>
+  inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> * p,double distance);
+  //template <typename Toper,
+  //         class = typename std::enable_if<Tdim == 2>::type>
+  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
+  //}
+  //template <typename Toper,
+  //         class = typename std::enable_if<Tdim == 3>::type>
+  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
+  //}
 
   void ResetMesh(){
       iterate_over_nodes(
           std::bind(&mpm::DamageNode<Tdim>::reset, std::placeholders::_1));
-  }
+  };
 
   void PopulateMesh(Vector<ParticleBase<Tdim>>& particles) {
 
@@ -123,26 +167,13 @@ class DamageMesh {
   void AddParticleToMesh(std::shared_ptr<ParticleBase<Tdim>> & particle) {
     auto position = particle->position;
     Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
-    DamageNode & node GetNode(index);
-    node.AddParticle(std::weak_ptr(p));
+    DamageNode<Tdim> & node = GetNode(index);
+    node.AddParticle(std::weak_ptr<mpm::ParticleBase<Tdim>>(particle));
   };
 
- private:
-  //! mesh id
-  //! Nodal property pool
-  std::shared_ptr<mpm::NodalProperties> nodal_properties_{nullptr};
-  double resolution{1};
-  Eigen::Matrix<int, Tdim, 1> mesh_size;
-  std::vector<DamageNode> nodes_;
-  //! Logger
-  std::unique_ptr<spdlog::logger> console_;
-  //! Maximum number of halo nodes
-  unsigned nhalo_nodes_{0};
-  //! Maximum number of halo nodes
-  unsigned ncomms_{0};
 };  // DamageMesh class
 }  // namespace mpm
 
 #include "damage_mesh.tcc"
 
-#endifif  // MPM_DAMAGE_MESH_H_
+#endif

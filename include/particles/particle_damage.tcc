@@ -110,3 +110,8 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
     this->stress_ = this->matrix_to_voigt(v * l.asDiagonal() * v.transpose());
   }
 }
+//! Delocalise damage
+template <unsigned Tdim>
+void mpm::ParticleDamage<Tdim>::delocalise_damage(ParticleBase<Tdim> & pother) noexcept {
+
+}

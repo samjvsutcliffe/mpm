@@ -42,6 +42,7 @@ using Json = nlohmann::json;
 #include "traction.h"
 #include "vector.h"
 #include "velocity_constraint.h"
+#include "damage_mesh.h"
 
 namespace mpm {
 
@@ -532,6 +533,11 @@ class Mesh {
   unsigned nhalo_nodes_{0};
   //! Maximum number of halo nodes
   unsigned ncomms_{0};
+
+ public:
+  //! Cartesian damage mesh for delocalisation
+  std::unique_ptr<mpm::DamageMesh<Tdim>> damage_mesh_;
+
 };  // Mesh class
 }  // namespace mpm
 

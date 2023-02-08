@@ -93,6 +93,12 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::compute_damage_increment, std::placeholders::_1, dt_, true));
 
+  mesh_->iterate_over_particles(
+      [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> & p) {
+          mesh_->damage_mesh_->iterate_over_neighbours(std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage,*p,std::placeholders::_1));
+      }
+  );
+
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::apply_damage, std::placeholders::_1, dt_));
 }

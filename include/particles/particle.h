@@ -200,6 +200,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Apply damage increment
   void apply_damage(double dt) noexcept override { };
 
+  //! Delocalise damage
+  void delocalise_damage(ParticleBase<Tdim> & pother) noexcept override {};
+
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
 
