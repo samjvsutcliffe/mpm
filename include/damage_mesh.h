@@ -48,25 +48,25 @@ namespace mpm {
 template <unsigned Tdim>
 struct DamageNode {
  void reset(){
-//     local_list.empty();
+     local_list.empty();
  }
- void AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>> && p){
-//     node_mutex_.lock();
-//     local_list.emplace_back(std::move(p));
-//     node_mutex_.unlock();
+ void AddParticle(mpm::ParticleBase<Tdim> & p){
+     node_mutex_.lock();
+     //local_list.emplace_back(&p);
+     node_mutex_.unlock();
  }
   template <typename Toper>
   inline void iterate_over_particles(Toper oper){
       for(auto & p : local_list){
-          oper(*p);
+      //    oper(p);
       }
     };
   //DamageNode() : node_mutex_(), local_list() {
   //}
   //~DamageNode() = default;
  protected:
-  //SpinMutex node_mutex_;
-  std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> local_list;
+  SpinMutex node_mutex_;
+  std::vector<mpm::ParticleBase<Tdim>*> local_list;
 };
 
 //! DamageMesh class
@@ -104,7 +104,7 @@ class DamageMesh {
     mesh_size = ((max - min) / resolution_).array().ceil().matrix();
       ////Default initalise nodes
       int size = mesh_size.prod();
-      nodes_ = std::vector<DamageNode<Tdim>>();
+      nodes_ = std::vector<DamageNode<Tdim>>(size);
       //nodes_.resize(size);
   };
 
@@ -143,7 +143,7 @@ class DamageMesh {
   template <typename Toper>
   inline void iterate_over_nodes(Toper oper){
 #pragma omp parallel for schedule(runtime)
-      for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) oper(*nitr);
+      for (auto nitr = nodes_.begin(); nitr != nodes_.end(); ++nitr) oper(*nitr);
     };
 
   //template <typename Toper,class>
@@ -162,19 +162,23 @@ class DamageMesh {
   //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
   //}
 
-  void ResetMesh(){
-      iterate_over_nodes(
-          std::bind(&mpm::DamageNode<Tdim>::reset, std::placeholders::_1));
+  void reset(){
+      //iterate_over_nodes(
+      //    std::bind(&mpm::DamageNode<Tdim>::reset, std::placeholders::_1));
   };
 
   void PopulateMesh(Vector<ParticleBase<Tdim>>& particles) {
-
+#pragma omp parallel for schedule(runtime)
+      for (auto p = particles.begin(); p != p.end(); ++p)
+      {
+       //AddParticle(*p);
+      }
   };
-  void AddParticleToMesh(std::shared_ptr<ParticleBase<Tdim>> & particle) {
-    auto position = particle->position;
-    Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
-    DamageNode<Tdim> & node = GetNode(index);
-    node.AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>>(particle));
+  void AddParticle(const std::shared_ptr<ParticleBase<Tdim>> & particle) {
+    //auto position = particle->coordinates();
+    //Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
+    //DamageNode<Tdim> & node = GetNode(index);
+    //node.AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>>(particle));
   };
 
 };  // DamageMesh class
