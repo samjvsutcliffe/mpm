@@ -229,7 +229,10 @@ class ParticleBase {
   virtual void apply_damage(double dt) noexcept = 0;
 
   //! Delocalise damage
-  virtual void delocalise_damage(ParticleBase<Tdim> & pother) noexcept = 0;
+  virtual void delocalise_damage(ParticleBase<Tdim>& pother) noexcept {};
+
+  //! Delocalise damage
+  virtual double damage() const { return 0; };
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;

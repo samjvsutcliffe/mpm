@@ -89,15 +89,23 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
 
+  const bool local_damage = false;
   // Update damage
   mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_damage_increment, std::placeholders::_1, dt_, true));
+      &mpm::ParticleBase<Tdim>::compute_damage_increment, std::placeholders::_1, dt_, local_damage));
 
-  mesh_->iterate_over_particles(
-      [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> & p) {
-          mesh_->damage_mesh_->iterate_over_neighbours(std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage,*p,std::placeholders::_1));
-      }
-  );
+  if(!local_damage)
+  {
+	  const double delocal_distance = 50;
+	  mesh_->iterate_over_particles(
+		  [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> & p) {
+			mesh_->damage_mesh_->iterate_over_neighbours(
+                &mpm::ParticleBase<Tdim>::delocalise_damage,
+				*p,
+				delocal_distance);
+		  }
+	  );
+  }
 
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::apply_damage, std::placeholders::_1, dt_));

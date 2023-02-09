@@ -51,7 +51,7 @@ class ParticleDamage : public Particle<Tdim> {
   void compute_stress() noexcept override;
 
   //! Return damage at a particle
-  double damage() const { return damage_; }
+  double damage() const override { return damage_; }
 
   //! Initialise properties
   void initialise() override;
@@ -87,6 +87,9 @@ class ParticleDamage : public Particle<Tdim> {
   double damage_inc_{0.}; 
   //! Local damage
   double damage_{0.}; 
+
+  double acc_damage_{0};
+  double acc_volume_{0};
   //! Stresses
   Eigen::Matrix<double, 6, 1> undamaged_stress_;
 

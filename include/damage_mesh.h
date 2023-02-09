@@ -50,22 +50,23 @@ struct DamageNode {
  void reset(){
 //     local_list.empty();
  }
- void AddParticle(std::weak_ptr<mpm::ParticleBase<Tdim>> && p){
+ void AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>> && p){
 //     node_mutex_.lock();
 //     local_list.emplace_back(std::move(p));
 //     node_mutex_.unlock();
  }
   template <typename Toper>
   inline void iterate_over_particles(Toper oper){
-      //for(auto & p : local_list){
-      //    oper(*p);
-      //}
+      for(auto & p : local_list){
+          oper(*p);
+      }
     };
-  DamageNode() = default;
-  ~DamageNode() = default;
+  //DamageNode() : node_mutex_(), local_list() {
+  //}
+  //~DamageNode() = default;
  protected:
   //SpinMutex node_mutex_;
-  //std::vector<std::weak_ptr<mpm::ParticleBase<Tdim>>> local_list;
+  std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> local_list;
 };
 
 //! DamageMesh class
@@ -77,6 +78,7 @@ class DamageMesh {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
+  using IndexDim = Eigen::Matrix<int, Tdim, 1>;
  private:
   //! mesh id
   //! Nodal property pool
@@ -99,10 +101,11 @@ class DamageMesh {
   DamageMesh() = default;
   DamageMesh(VectorDim min, VectorDim max, double resolution) : resolution_{resolution}, nodes_(){
       offset = min;
-      mesh_size = ((max-min) / resolution_).array().ceil().matrix();
+    mesh_size = ((max - min) / resolution_).array().ceil().matrix();
       ////Default initalise nodes
       int size = mesh_size.prod();
-      nodes_.resize(size);
+      nodes_ = std::vector<DamageNode<Tdim>>();
+      //nodes_.resize(size);
   };
 
   //! Default destructor
@@ -115,9 +118,12 @@ class DamageMesh {
   DamageMesh& operator=(const DamageMesh<Tdim>&) = delete;
 
   //! Find nearest node's index
-  int PositionToIndex(Eigen::Matrix<double, Tdim, 1> position) {
-    Eigen::Matrix<int, Tdim, 1> index =
-        ((position-offset) / resolution_).array().round().matrix();
+  IndexDim PositionToIndex(Eigen::Matrix<double, Tdim, 1> position) {
+    IndexDim index = (((position - offset) / resolution_)
+                                            .array()
+                                            .round()
+                         .matrix())
+                         .template cast<int>();
     return index;
   };
   //! Caculate real-world position from index
@@ -146,8 +152,8 @@ class DamageMesh {
   //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance);
 
   template <typename Toper>
-  inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> * p,double distance);
-  //template <typename Toper,
+  inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance);
+  //template <typename Toper,Eigen::Matrix<int,Tdim,1>
   //         class = typename std::enable_if<Tdim == 2>::type>
   //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
   //}
@@ -168,7 +174,7 @@ class DamageMesh {
     auto position = particle->position;
     Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
     DamageNode<Tdim> & node = GetNode(index);
-    node.AddParticle(std::weak_ptr<mpm::ParticleBase<Tdim>>(particle));
+    node.AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>>(particle));
   };
 
 };  // DamageMesh class

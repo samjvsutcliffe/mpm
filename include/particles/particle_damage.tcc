@@ -113,5 +113,10 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
 //! Delocalise damage
 template <unsigned Tdim>
 void mpm::ParticleDamage<Tdim>::delocalise_damage(ParticleBase<Tdim> & pother) noexcept {
-
+  //Throws if particle damage isn't 
+  //VectorDim dist = coordinates_ - pother.coordinates();
+  //double weight = ; 
+  //double weighted_volume = 
+  //acc_damage += pother.damage();
+  //acc_volume += pother.volume();
 }
