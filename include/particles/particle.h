@@ -312,6 +312,17 @@ class Particle : public ParticleBase<Tdim> {
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) override;
 
+  //! Minus the mass of the virtual fluid
+  //! \param[in] fluid_density Density of the fluid
+  void minus_virtual_fluid_mass(double fluid_density) override;
+
+  //! Minus the internal force of the virtual fluid
+  //! \param[in] tradtion Boundary pressure
+  //! \param[in] gradient Gradient of boundary pressure
+  virtual void minus_virtual_fluid_internal_force(
+      std::vector<double> traction,
+      std::vector<double> gradient_traction) override;
+
  protected:
   //! Initialise particle material container
   //! \details This function allocate memory and initialise the material related
