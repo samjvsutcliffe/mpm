@@ -17,10 +17,17 @@ mpm::MPMScheme<Tdim>::MPMScheme(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh,
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::initialise() {
-#pragma omp parallel sections
+//      mesh_->iterate_over_nodes(
+//          std::bind(&mpm::NodeBase<Tdim>::initialise, std::placeholders::_1));
+//
+//      mesh_->iterate_over_cells(
+//          std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
+//      mesh_->iterate_over_particles(std::bind(
+//          &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+//#pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
-#pragma omp section
+//#pragma omp section
     {
       // Initialise nodes
       mesh_->iterate_over_nodes(
@@ -30,7 +37,7 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
           std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
     }
     // Spawn a task for particles
-#pragma omp section
+//#pragma omp section
     {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
@@ -120,9 +127,9 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
     unsigned step, bool concentrated_nodal_forces) {
   // Spawn a task for external force
-#pragma omp parallel sections
+//#pragma omp parallel sections
   {
-#pragma omp section
+//#pragma omp section
     {
       // Iterate over each particle to compute nodal body force
       mesh_->iterate_over_particles(
@@ -140,7 +147,7 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
                       std::placeholders::_1, phase, (step * dt_)));
     }
 
-#pragma omp section
+//#pragma omp section
     {
       // Spawn a task for internal force
       // Iterate over each particle to compute nodal internal force
