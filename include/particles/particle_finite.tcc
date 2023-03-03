@@ -712,6 +712,9 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
     console_->error("Negative volume!\n");
     abort();
   }
+  strain_(3) /= 2.0;
+  strain_(4) /= 2.0;
+  strain_(5) /= 2.0;
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(this->voigt_to_matrix(strain_));
   if (eigensolver.info() != Eigen::Success)
   {
@@ -733,7 +736,10 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   auto l = trialeigensolver.eigenvalues();
   auto v = trialeigensolver.eigenvectors();
   strain_ = (this->matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()).array() * 0.5).matrix();
-  dstrain_ = strain_ - strain_prev;
+  strain_(3) *= 2.0;
+  strain_(4) *= 2.0;
+  strain_(5) *= 2.0;
+  //dstrain_ = strain_ - strain_prev;
   //Update size
   Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
   for(int i = 0; i < Tdim;++i){
