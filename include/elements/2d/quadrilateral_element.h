@@ -82,7 +82,6 @@ class QuadrilateralElement : public Element<Tdim> {
     std::string logger = "quadrilateral::<" + std::to_string(Tdim) + ", " +
                          std::to_string(Tnfunctions) + ">";
     console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
-    console_->info("Constructed quad");
   }
 
   //! Return number of shape functions
