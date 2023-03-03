@@ -17,13 +17,6 @@ mpm::MPMScheme<Tdim>::MPMScheme(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh,
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::initialise() {
-//      mesh_->iterate_over_nodes(
-//          std::bind(&mpm::NodeBase<Tdim>::initialise, std::placeholders::_1));
-//
-//      mesh_->iterate_over_cells(
-//          std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
-//      mesh_->iterate_over_particles(std::bind(
-//          &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
 //#pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
