@@ -12,6 +12,7 @@
 
 int main(int argc, char** argv) {
 
+  std::ios_base::sync_with_stdio(false);
 #ifdef USE_MPI
   // Initialise MPI
   MPI_Init(&argc, &argv);
@@ -46,6 +47,7 @@ int main(int argc, char** argv) {
     unsigned nthreads = io->nthreads();
 #ifdef _OPENMP
     omp_set_num_threads(nthreads > 0 ? nthreads : omp_get_max_threads());
+    console->info("OpenMP threads: {}",nthreads > 0 ? nthreads : omp_get_max_threads());
 #endif
 
     // Get analysis type
