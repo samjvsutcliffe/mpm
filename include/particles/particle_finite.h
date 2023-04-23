@@ -396,7 +396,7 @@ class ParticleFinite : public ParticleBase<Tdim> {
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
   //! stretch tensor
-  Eigen::Matrix<double, 6, 1> stretch_tensor_;
+  Eigen::Matrix<double, 3, 3> stretch_tensor_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
   //! Stresses
