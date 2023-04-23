@@ -616,10 +616,10 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<2>::compute_strain_rate(
     strain_rate[1] += dn_dx(i, 1) * vel[1];
     strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
     //Stretch tensor stuff as well
-    stretch_tensor_[0,0] += dn_dx(i, 0) * vel[0];
-    stretch_tensor_[1,1] += dn_dx(i, 1) * vel[1];
-    stretch_tensor_[0,1] += dn_dx(i, 1) * vel[0];
-    stretch_tensor_[1,0] += dn_dx(i, 0) * vel[1];
+    stretch_tensor_(0,0) += dn_dx(i, 0) * vel[0];
+    stretch_tensor_(1,1) += dn_dx(i, 1) * vel[1];
+    stretch_tensor_(0,1) += dn_dx(i, 1) * vel[0];
+    stretch_tensor_(1,0) += dn_dx(i, 0) * vel[1];
   }
 
   if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
@@ -628,7 +628,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<2>::compute_strain_rate(
 
   for(int x = 0;x < 2;++x){
       for(int y = 0;y < 2;++y){
-        if (std::fabs(stretch_tensor_[x,y]) < 1.E-15) strain_rate[0] = 0.;
+        if (std::fabs(stretch_tensor_(x,y)) < 1.E-15) strain_rate[0] = 0.;
       }
   }
   return strain_rate;
@@ -697,7 +697,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
-  stretch_tensor_ = dstrain_;
+  stretch_tensor_ *= dt;
 
   // Linear strain increment
 
@@ -714,7 +714,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   //Logarithmic strain increment
   //Voight to matrix deformation increment
   //stress_ = stress_ * deformation_gradient_.determinant();
-  Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + this->voigt_to_matrix(dstrain_);
+  Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + stretch_tensor_;
   //Update deformation gradient
   deformation_gradient_ = df * deformation_gradient_;
   auto strain_prev = strain_;
@@ -794,7 +794,7 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Ei
         {
           omega += ((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
               * v.col(i) * v.col(i).transpose()
-              * this->voigt_to_matrix(stretch_tensor_)
+              * stretch_tensor_
               * v.col(j) * v.col(j).transpose();
         }
       }
