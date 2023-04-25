@@ -627,11 +627,11 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<2>::compute_strain_rate(
   if (std::fabs(strain_rate[1]) < 1.E-15) strain_rate[1] = 0.;
   if (std::fabs(strain_rate[3]) < 1.E-15) strain_rate[3] = 0.;
 
-  for(int x = 0;x < 2;++x){
-      for(int y = 0;y < 2;++y){
-        if (std::fabs(stretch_tensor_(x,y)) < 1.E-15) stretch_tensor_(x,y) = 0.;
-      }
-  }
+  //for(int x = 0;x < 2;++x){
+  //    for(int y = 0;y < 2;++y){
+  //      if (std::fabs(stretch_tensor_(x,y)) < 1.E-15) stretch_tensor_(x,y) = 0.;
+  //    }
+  //}
   return strain_rate;
 }
 

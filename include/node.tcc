@@ -192,9 +192,9 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_velocity() {
       velocity_.col(phase) = momentum_.col(phase) / mass_(phase);
 
       // Check to see if value is below threshold
-      for (unsigned i = 0; i < velocity_.rows(); ++i)
-        if (std::abs(velocity_.col(phase)(i)) < 1.E-15)
-          velocity_.col(phase)(i) = 0.;
+      //for (unsigned i = 0; i < velocity_.rows(); ++i)
+      //  if (std::abs(velocity_.col(phase)(i)) < 1.E-15)
+      //    velocity_.col(phase)(i) = 0.;
     }
   }
 
@@ -241,12 +241,12 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
     this->apply_velocity_constraints();
 
     // Set a threshold
-    for (unsigned i = 0; i < Tdim; ++i)
-      if (std::abs(velocity_.col(phase)(i)) < tolerance)
-        velocity_.col(phase)(i) = 0.;
-    for (unsigned i = 0; i < Tdim; ++i)
-      if (std::abs(acceleration_.col(phase)(i)) < tolerance)
-        acceleration_.col(phase)(i) = 0.;
+    //for (unsigned i = 0; i < Tdim; ++i)
+    //  if (std::abs(velocity_.col(phase)(i)) < tolerance)
+    //    velocity_.col(phase)(i) = 0.;
+    //for (unsigned i = 0; i < Tdim; ++i)
+    //  if (std::abs(acceleration_.col(phase)(i)) < tolerance)
+    //    acceleration_.col(phase)(i) = 0.;
     status = true;
   }
   return status;
@@ -277,12 +277,12 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
     this->apply_velocity_constraints();
 
     // Set a threshold
-    for (unsigned i = 0; i < Tdim; ++i)
-      if (std::abs(velocity_.col(phase)(i)) < tolerance)
-        velocity_.col(phase)(i) = 0.;
-    for (unsigned i = 0; i < Tdim; ++i)
-      if (std::abs(acceleration_.col(phase)(i)) < tolerance)
-        acceleration_.col(phase)(i) = 0.;
+    //for (unsigned i = 0; i < Tdim; ++i)
+    //  if (std::abs(velocity_.col(phase)(i)) < tolerance)
+    //    velocity_.col(phase)(i) = 0.;
+    //for (unsigned i = 0; i < Tdim; ++i)
+    //  if (std::abs(acceleration_.col(phase)(i)) < tolerance)
+    //    acceleration_.col(phase)(i) = 0.;
     status = true;
   }
   return status;
@@ -313,12 +313,12 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_viscous(
     this->apply_velocity_constraints();
 
     // Set a threshold
-    for (unsigned i = 0; i < Tdim; ++i)
-      if (std::abs(velocity_.col(phase)(i)) < tolerance)
-        velocity_.col(phase)(i) = 0.;
-    for (unsigned i = 0; i < Tdim; ++i)
-      if (std::abs(acceleration_.col(phase)(i)) < tolerance)
-        acceleration_.col(phase)(i) = 0.;
+    //for (unsigned i = 0; i < Tdim; ++i)
+    //  if (std::abs(velocity_.col(phase)(i)) < tolerance)
+    //    velocity_.col(phase)(i) = 0.;
+    //for (unsigned i = 0; i < Tdim; ++i)
+    //  if (std::abs(acceleration_.col(phase)(i)) < tolerance)
+    //    acceleration_.col(phase)(i) = 0.;
     status = true;
   }
   return status;
