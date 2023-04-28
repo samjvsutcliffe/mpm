@@ -27,12 +27,12 @@ mpm::Glen<Tdim>::Glen(unsigned id, const Json& material_properties)
 template <unsigned Tdim>
 bool mpm::Glen<Tdim>::compute_elastic_tensor() {
   // Shear modulus
-  const double bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
+  this->bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
   const double G = youngs_modulus_ / (2.0 * (1. + poisson_ratio_));
 
   const double a1 = bulk_modulus_ + (4.0 / 3.0) * G;
   const double a2 = bulk_modulus_ - (2.0 / 3.0) * G;
-
+  de_ = Matrix6x6::Zero();
   // clang-format off
   // compute elasticityTensor
   de_(0,0)=a1;    de_(0,1)=a2;    de_(0,2)=a2;    de_(0,3)=0;    de_(0,4)=0;    de_(0,5)=0;
@@ -164,7 +164,6 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   for (int i = 0; i < 3; ++i) {
     elastic_inc(i) -= pressure_inc;
   }
-  const double bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
   const double new_pressure = trace_stress + pressure_inc;
   //const double new_pressure = bulk_modulus_ * (strain(0) + strain(1) + strain(2));
   // Update stress component
@@ -198,6 +197,7 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   }
   */
 
+  const double bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
   Eigen::Matrix<double, 6, 1> pstress = stress;
   const double trace_strain_rate = (strain_rate(0) + strain_rate(1) + strain_rate(2)) / 3.0;
   Eigen::Matrix<double, 6, 1> dev_strain_rate = strain_rate;
@@ -207,15 +207,15 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   const double vol_strain_inc = (dstrain(0) + dstrain(1))/2;
   const double dp = bulk_modulus_ * vol_strain_inc;
   const double new_pressure = bulk_modulus_ * (strain(0) + strain(1))/3.0;
-  //const double viscosity = compute_glen_viscosity_strain(strain_rate, viscosity_, viscous_power_);
-  //pstress(0) = new_pressure;
-  //pstress(1) = new_pressure;
-  //pstress(2) = new_pressure;
-  //pstress(3) = viscosity_ * strain_rate(3);
-  //pstress += dev_strain_rate * 2.0 * viscosity;
+  const double viscosity = compute_glen_viscosity_strain(strain_rate, viscosity_, viscous_power_);
   pstress(0) = new_pressure;
   pstress(1) = new_pressure;
+  pstress(2) = new_pressure;
   pstress(3) = viscosity_ * strain_rate(3);
+  pstress += dev_strain_rate * 2.0 * viscosity;
+  //pstress(0) -= dp;
+  //pstress(1) -= dp;
+ // pstress(3) = viscosity_ * strain_rate(3);
   return pstress;
 }
 

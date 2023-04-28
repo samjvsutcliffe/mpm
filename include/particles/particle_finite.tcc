@@ -718,7 +718,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + stretch_tensor_;
   //Update deformation gradient
   deformation_gradient_ = df * deformation_gradient_;
-  auto strain_prev = strain_;
+  Eigen::Matrix<double,6,1> strain_prev = strain_;
   if (deformation_gradient_.determinant() <= 0)
   {
     console_->error("Negative volume!\n");
