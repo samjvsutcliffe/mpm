@@ -207,14 +207,14 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   const double vol_strain_inc = (dstrain(0) + dstrain(1))/2;
   const double dp = bulk_modulus_ * vol_strain_inc;
   const double new_pressure = bulk_modulus_ * (strain(0) + strain(1))/3.0;
-  const double viscosity = compute_glen_viscosity_strain(strain_rate, viscosity_, viscous_power_);
+  //const double viscosity = compute_glen_viscosity_strain(strain_rate, viscosity_, viscous_power_);
   //pstress(0) = new_pressure;
   //pstress(1) = new_pressure;
   //pstress(2) = new_pressure;
   //pstress(3) = viscosity_ * strain_rate(3);
   //pstress += dev_strain_rate * 2.0 * viscosity;
-  pstress(0) -= new_pressure;
-  pstress(1) -= new_pressure;
+  pstress(0) = new_pressure;
+  pstress(1) = new_pressure;
   pstress(3) = viscosity_ * strain_rate(3);
   return pstress;
 }
