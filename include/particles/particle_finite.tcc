@@ -594,12 +594,14 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<1>::compute_strain_rate(
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
+  stretch_tensor_ *= 0;
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 1, 1> vel = nodes_[i]->velocity(phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
+    stretch_tensor_(0,0) += dn_dx(i, 0) * vel[0];
   }
 
-  if (std::fabs(strain_rate(0)) < 1.E-15) strain_rate[0] = 0.;
+  //if (std::fabs(strain_rate(0)) < 1.E-15) strain_rate[0] = 0.;
   return strain_rate;
 }
 
@@ -650,10 +652,20 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<3>::compute_strain_rate(
     strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
     strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
     strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+
+    stretch_tensor_(0,0) += dn_dx(i, 0) * vel[0];
+    stretch_tensor_(1,1) += dn_dx(i, 1) * vel[1];
+    stretch_tensor_(2,2) += dn_dx(i, 2) * vel[1];
+    stretch_tensor_(0,1) += dn_dx(i, 1) * vel[0];
+    stretch_tensor_(0,2) += dn_dx(i, 2) * vel[0];
+    stretch_tensor_(1,0) += dn_dx(i, 0) * vel[1];
+    stretch_tensor_(1,2) += dn_dx(i, 2) * vel[1];
+    stretch_tensor_(2,0) += dn_dx(i, 0) * vel[2];
+    stretch_tensor_(2,1) += dn_dx(i, 2) * vel[2];
   }
 
-  for (unsigned i = 0; i < strain_rate.size(); ++i)
-    if (std::fabs(strain_rate[i]) < 1.E-15) strain_rate[i] = 0.;
+  //for (unsigned i = 0; i < strain_rate.size(); ++i)
+  //  if (std::fabs(strain_rate[i]) < 1.E-15) strain_rate[i] = 0.;
   return strain_rate;
 }
 
