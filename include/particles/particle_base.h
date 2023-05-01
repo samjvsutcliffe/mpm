@@ -204,6 +204,9 @@ class ParticleBase {
   //! Compute strain
   virtual void compute_strain(double dt) noexcept = 0;
 
+  //! Compute vorticity
+  virtual void compute_vorticity(double dt) noexcept = 0;
+
   //! Strain
   virtual Eigen::Matrix<double, 6, 1> strain() const = 0;
 
@@ -220,7 +223,7 @@ class ParticleBase {
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>&) = 0;
 
   //! Compute stress
-  virtual void compute_stress() noexcept = 0;
+  virtual void compute_stress(const float dt_) noexcept = 0;
 
   //! Compute damage increment
   virtual void compute_damage_increment(double dt,bool local) noexcept = 0;
@@ -236,6 +239,9 @@ class ParticleBase {
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;
+
+  //! Return stress
+  virtual Eigen::Matrix<double, 6, 1> stress_cauchy() const = 0;
 
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
@@ -327,6 +333,15 @@ class ParticleBase {
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) = 0;
 
+  //! Reformat voigt notation symetric to matrix
+  //! \param[in] voigt a symetric tensor in voigt notation
+  Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt);
+  Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat);
+
+  //! Reformat voigt notation vorticity to matrix
+  //! \param[in] voigt an antisymetric tensor in voigt notation
+  Eigen::Matrix<double,3,3> vorticity_matrix(Eigen::Matrix<double,6,1> voigt);
+
  protected:
   //! particleBase id
   Index id_{std::numeric_limits<Index>::max()};
@@ -342,6 +357,8 @@ class ParticleBase {
   std::shared_ptr<Cell<Tdim>> cell_;
   //! Vector of nodal pointers
   std::vector<std::shared_ptr<NodeBase<Tdim>>> nodes_;
+  //! Vector of nodal pointers
+  std::vector<int> nodes_local_ids_;
   //! Material
   std::vector<std::shared_ptr<Material<Tdim>>> material_;
   //! Unsigned material id

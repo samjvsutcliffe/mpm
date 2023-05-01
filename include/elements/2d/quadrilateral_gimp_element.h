@@ -33,7 +33,7 @@ namespace mpm {
 //!
 //! \tparam Tdim Dimension
 //! \tparam Tnfunctions Number of functions
-template <unsigned Tdim, unsigned Tnfunctions>
+template <unsigned Tdim>
 class QuadrilateralGIMPElement : public QuadrilateralElement<2, 4> {
 
  public:
@@ -43,8 +43,8 @@ class QuadrilateralGIMPElement : public QuadrilateralElement<2, 4> {
   //! constructor with number of shape functions
   QuadrilateralGIMPElement() : QuadrilateralElement<2, 4>() {
     static_assert(Tdim == 2, "Invalid dimension for a GIMP element");
-    static_assert((Tnfunctions == 16),
-                  "Specified number of shape functions is not defined");
+    //static_assert((Tnfunctions >= 4) && (Tnfunctions <= 16),
+    //              "Specified number of shape functions is not defined");
 
     //! Logger
     std::string logger = "quadrilateral_gimp::<" + std::to_string(Tdim) + ", " +
@@ -130,9 +130,47 @@ class QuadrilateralGIMPElement : public QuadrilateralElement<2, 4> {
       const VectorDim& point,
       const Eigen::MatrixXd& nodal_coordinates) const override;
 
+  //! Compute local node matrix
+  virtual void InitialiseLocalMapping(std::vector<int>& local_node_ids) override{
+    //console_->info("Construct local nodes");
+   Eigen::Matrix<double, 16, Tdim> local_nodes =
+  (Eigen::Matrix<double, 16, Tdim>() << 
+    -1, -1,
+    1 ,-1 ,
+    1 ,1  ,
+    -1, 1 ,
+    -3, -1,
+    3 ,-1 ,
+    1 ,-3 ,
+    1 ,3  ,
+    3 ,1  ,
+    -3, 1 ,
+    -1, 3 ,
+    -1, -3,
+    -3, -3,
+    3 ,-3 ,
+    3 ,3  ,
+    -3, 3
+      ).finished();
+    Tnfunctions = local_node_ids.size();
+    //console_->info("TN functions {}",Tnfunctions);
+    local_node_mapping_ =
+        Eigen::MatrixXd::Zero(Tnfunctions,Tdim);
+   for (int i = 0; i < Tnfunctions; ++i)
+   {
+      local_node_mapping_.row(i) = local_nodes.row(local_node_ids[i]);
+   }
+   //console_->info("Mapping complete");
+  };
+
  private:
   //! Return natural nodal coordinates
   Eigen::MatrixXd natural_nodal_coordinates() const;
+
+  //! Mapping matrix of local nodes
+  Eigen::MatrixXd local_node_mapping_;
+  //! How many shape functions exist
+  int Tnfunctions = 0;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

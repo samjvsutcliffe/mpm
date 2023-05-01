@@ -2,6 +2,7 @@
 #include "particle_damage.h"
 #include "factory.h"
 #include "particle_base.h"
+#include "particle_finite.h"
 
 namespace mpm {
 // ParticleType
@@ -28,3 +29,14 @@ static Register<mpm::ParticleBase<2>, mpm::ParticleDamage<2>, mpm::Index,
 static Register<mpm::ParticleBase<3>, mpm::ParticleDamage<3>, mpm::Index,
                 const Eigen::Matrix<double, 3, 1>&>
     particle3d_damage("P3D_DAMAGE");
+
+
+// ParticleFinite2D (2 Dim)
+static Register<mpm::ParticleBase<2>, mpm::ParticleFinite<2>, mpm::Index,
+                const Eigen::Matrix<double, 2, 1>&>
+    particle2d_finite("P2DFS");
+// ParticleFinite3D (3 Dim)
+static Register<mpm::ParticleBase<3>, mpm::ParticleFinite<3>, mpm::Index,
+                const Eigen::Matrix<double, 3, 1>&>
+    particle3d_finite("P3DFS");
+

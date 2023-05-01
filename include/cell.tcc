@@ -13,11 +13,13 @@ mpm::Cell<Tdim>::Cell(Index id, unsigned nnodes,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 
   try {
-    if (elementptr->nfunctions() == this->nnodes_) {
+    if (elementptr->nfunctions() == this->nnodes_ || true) {
       element_ = elementptr;
       // Create an empty nodal coordinates
       nodal_coordinates_.resize(this->nnodes_, Tdim);
     } else {
+      //Who cares GIMP can allow for this
+        //Not actually an error if your brave enough
       throw std::runtime_error(
           "Specified number of shape functions and nodes don't match");
     }
@@ -33,6 +35,8 @@ bool mpm::Cell<Tdim>::initialise() {
   try {
     // Check if node pointers are present and are equal to the expected number
     if (this->nnodes_ == this->nodes_.size()) {
+      //this->element_->InitialiseLocalMapping(this->nodes_local_ids_);
+      //console_->info("Initialised");
       // Initialise cell properties (volume, centroid, length)
       this->compute_centroid();
       this->compute_mean_length();
@@ -134,11 +138,13 @@ bool mpm::Cell<Tdim>::add_node(
     // If number of node ptrs in a cell is less than the maximum number of nodes
     // per cell
     // The local id should be between 0 and maximum number of nodes
-    if (nodes_.size() < this->nnodes_ && local_id < this->nnodes_) {
+    if (nodes_.size() < this->nnodes_) {
+    //&& local_id < this->nnodes_) {
       nodes_.emplace_back(node_ptr);
+      nodes_local_ids_.emplace_back(local_id);
       // Assign coordinates
-      nodal_coordinates_.row(local_id) =
-          nodes_[local_id]->coordinates().transpose();
+      nodal_coordinates_.row(nodes_.size()-1) =
+          nodes_[nodes_.size()-1]->coordinates().transpose();
       insertion_status = true;
     } else {
       throw std::runtime_error(

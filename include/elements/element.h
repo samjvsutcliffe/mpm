@@ -164,6 +164,9 @@ class Element {
   //! Return if natural coordinates can be evaluates
   virtual bool isvalid_natural_coordinates_analytical() const = 0;
 
+  //! Optional update mapping based on whether missing nodes exist
+  virtual void InitialiseLocalMapping(std::vector<int>& local_node_ids){};
+
   //! Compute Natural coordinates of a point (analytical)
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   //! \param[in] point Location of the point in cell

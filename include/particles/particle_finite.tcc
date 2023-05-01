@@ -1,6 +1,6 @@
 //! Construct a particle with id and coordinates
 template <unsigned Tdim>
-mpm::Particle<Tdim>::Particle(Index id, const VectorDim& coord)
+mpm::ParticleFinite<Tdim>::ParticleFinite(Index id, const VectorDim& coord)
     : mpm::ParticleBase<Tdim>(id, coord) {
   this->initialise();
   // Clear cell ptr
@@ -17,7 +17,7 @@ mpm::Particle<Tdim>::Particle(Index id, const VectorDim& coord)
 
 //! Construct a particle with id, coordinates and status
 template <unsigned Tdim>
-mpm::Particle<Tdim>::Particle(Index id, const VectorDim& coord, bool status)
+mpm::ParticleFinite<Tdim>::ParticleFinite(Index id, const VectorDim& coord, bool status)
     : mpm::ParticleBase<Tdim>(id, coord, status) {
   this->initialise();
   cell_ = nullptr;
@@ -32,7 +32,7 @@ mpm::Particle<Tdim>::Particle(Index id, const VectorDim& coord, bool status)
 
 //! Initialise particle data from HDF5
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::initialise_particle(const HDF5Particle& particle) {
+bool mpm::ParticleFinite<Tdim>::initialise_particle(const HDF5Particle& particle) {
 
   // Assign id
   this->id_ = particle.id;
@@ -94,6 +94,7 @@ bool mpm::Particle<Tdim>::initialise_particle(const HDF5Particle& particle) {
   // Status
   this->status_ = particle.status;
 
+
   // Cell id
   this->cell_id_ = particle.cell_id;
   this->cell_ = nullptr;
@@ -109,7 +110,7 @@ bool mpm::Particle<Tdim>::initialise_particle(const HDF5Particle& particle) {
 
 //! Initialise particle data from HDF5
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::initialise_particle(
+bool mpm::ParticleFinite<Tdim>::initialise_particle(
     const HDF5Particle& particle,
     const std::shared_ptr<mpm::Material<Tdim>>& material) {
   bool status = this->initialise_particle(particle);
@@ -140,7 +141,7 @@ bool mpm::Particle<Tdim>::initialise_particle(
 //! Return particle data in HDF5 format
 template <unsigned Tdim>
 // cppcheck-suppress *
-mpm::HDF5Particle mpm::Particle<Tdim>::hdf5() const {
+mpm::HDF5Particle mpm::ParticleFinite<Tdim>::hdf5() const {
 
   mpm::HDF5Particle particle_data;
 
@@ -233,20 +234,23 @@ mpm::HDF5Particle mpm::Particle<Tdim>::hdf5() const {
 
 // Initialise particle properties
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::initialise() {
+void mpm::ParticleFinite<Tdim>::initialise() {
   displacement_.setZero();
   dstrain_.setZero();
   mass_ = 0.;
   natural_size_.setZero();
+  natural_size_0_.setZero();
   set_traction_ = false;
   size_.setZero();
   strain_rate_.setZero();
   strain_.setZero();
   stress_.setZero();
+  stress_kirchoff_.setZero();
   traction_.setZero();
   velocity_.setZero();
   volume_ = std::numeric_limits<double>::max();
   volumetric_strain_centroid_ = 0.;
+  this->deformation_gradient_ = Eigen::Matrix3d::Identity();
 
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_["mass"] = [&]() { return mass(); };
@@ -260,7 +264,7 @@ void mpm::Particle<Tdim>::initialise() {
 
 //! Initialise particle material container
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::initialise_material(unsigned phase_size) {
+void mpm::ParticleFinite<Tdim>::initialise_material(unsigned phase_size) {
   material_.resize(phase_size);
   material_id_.resize(phase_size);
   state_variables_.resize(phase_size);
@@ -272,7 +276,7 @@ void mpm::Particle<Tdim>::initialise_material(unsigned phase_size) {
 
 //! Assign material history variables
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_material_state_vars(
+bool mpm::ParticleFinite<Tdim>::assign_material_state_vars(
     const mpm::dense_map& state_vars,
     const std::shared_ptr<mpm::Material<Tdim>>& material, unsigned phase) {
   bool status = false;
@@ -291,7 +295,7 @@ bool mpm::Particle<Tdim>::assign_material_state_vars(
 
 // Assign a cell to particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_cell(
+bool mpm::ParticleFinite<Tdim>::assign_cell(
     const std::shared_ptr<Cell<Tdim>>& cellptr) {
   bool status = true;
   try {
@@ -307,10 +311,7 @@ bool mpm::Particle<Tdim>::assign_cell(
       dn_dx_centroid_ = cell_->dn_dx_centroid();
       // Copy nodal pointer to cell
       nodes_.clear();
-      //for (auto& cell_id : cell_->neighbours()) {
-      //}
       nodes_ = cell_->nodes();
-      nodes_local_ids_ = cell_->nodes_local_ids();
 
       // Compute reference location of particle
       bool xi_status = this->compute_reference_location();
@@ -328,7 +329,7 @@ bool mpm::Particle<Tdim>::assign_cell(
 
 // Assign a cell to particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_cell_xi(
+bool mpm::ParticleFinite<Tdim>::assign_cell_xi(
     const std::shared_ptr<Cell<Tdim>>& cellptr,
     const Eigen::Matrix<double, Tdim, 1>& xi) {
   bool status = true;
@@ -345,7 +346,6 @@ bool mpm::Particle<Tdim>::assign_cell_xi(
       // Copy nodal pointer to cell
       nodes_.clear();
       nodes_ = cell_->nodes();
-      nodes_local_ids_ = cell_->nodes_local_ids();
 
       // Assign the reference location of particle
       bool xi_nan = false;
@@ -372,7 +372,7 @@ bool mpm::Particle<Tdim>::assign_cell_xi(
 
 // Assign a cell id to particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_cell_id(mpm::Index id) {
+bool mpm::ParticleFinite<Tdim>::assign_cell_id(mpm::Index id) {
   bool status = false;
   try {
     // if a cell ptr is null
@@ -391,7 +391,7 @@ bool mpm::Particle<Tdim>::assign_cell_id(mpm::Index id) {
 
 // Remove cell for the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::remove_cell() {
+void mpm::ParticleFinite<Tdim>::remove_cell() {
   // if a cell is not nullptr
   if (cell_ != nullptr) cell_->remove_particle_id(this->id_);
   cell_id_ = std::numeric_limits<Index>::max();
@@ -401,7 +401,7 @@ void mpm::Particle<Tdim>::remove_cell() {
 
 // Assign a material to particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_material(
+bool mpm::ParticleFinite<Tdim>::assign_material(
     const std::shared_ptr<Material<Tdim>>& material, unsigned phase) {
   bool status = false;
   try {
@@ -423,7 +423,7 @@ bool mpm::Particle<Tdim>::assign_material(
 
 // Compute reference location cell to particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::compute_reference_location() noexcept {
+bool mpm::ParticleFinite<Tdim>::compute_reference_location() noexcept {
   // Set status of compute reference location
   bool status = false;
   // Compute local coordinates
@@ -439,7 +439,7 @@ bool mpm::Particle<Tdim>::compute_reference_location() noexcept {
 
 // Compute shape functions and gradients
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_shapefn() noexcept {
+void mpm::ParticleFinite<Tdim>::compute_shapefn() noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
   // Get element ptr of a cell
@@ -447,22 +447,18 @@ void mpm::Particle<Tdim>::compute_shapefn() noexcept {
 
   // Zero matrix
   Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
-  //console_->info("Shape of nodal coordinates {},{}",
-  //               cell_->nodal_coordinates().rows(),
-  //               cell_->nodal_coordinates().cols());
+
   // Compute shape function of the particle
   shapefn_ = element->shapefn(this->xi_, this->natural_size_, zero);
-  //console_->info("Shape of shapefn {},{}", shapefn_.rows(), shapefn_.cols());
 
   // Compute dN/dx
   dn_dx_ = element->dn_dx(this->xi_, cell_->nodal_coordinates(),
                           this->natural_size_, zero);
-  //console_->info("Shape of dn/dx {},{}", dn_dx_.rows(), dn_dx_.cols());
 }
 
 // Assign volume to the particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_volume(double volume) {
+bool mpm::ParticleFinite<Tdim>::assign_volume(double volume) {
   bool status = true;
   try {
     if (volume <= 0.)
@@ -484,6 +480,7 @@ bool mpm::Particle<Tdim>::assign_volume(double volume) {
       this->natural_size_.fill(
           element->unit_element_length() /
           std::pow(cell_->nparticles(), static_cast<double>(1. / Tdim)));
+      this->natural_size_0_ = natural_size_;
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -494,7 +491,7 @@ bool mpm::Particle<Tdim>::assign_volume(double volume) {
 
 // Compute volume of the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_volume() noexcept {
+void mpm::ParticleFinite<Tdim>::compute_volume() noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
   // Volume of the cell / # of particles
@@ -503,7 +500,7 @@ void mpm::Particle<Tdim>::compute_volume() noexcept {
 
 // Update volume based on the central strain rate
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::update_volume() noexcept {
+void mpm::ParticleFinite<Tdim>::update_volume() noexcept {
   // Check if particle has a valid cell ptr and a valid volume
   assert(cell_ != nullptr && volume_ != std::numeric_limits<double>::max());
   // Compute at centroid
@@ -514,7 +511,7 @@ void mpm::Particle<Tdim>::update_volume() noexcept {
 
 // Compute mass of particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_mass() noexcept {
+void mpm::ParticleFinite<Tdim>::compute_mass() noexcept {
   // Check if particle volume is set and material ptr is valid
   assert(volume_ != std::numeric_limits<double>::max() &&
          this->material() != nullptr);
@@ -526,23 +523,22 @@ void mpm::Particle<Tdim>::compute_mass() noexcept {
 
 //! Map particle mass and momentum to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_mass_momentum_to_nodes() noexcept {
+void mpm::ParticleFinite<Tdim>::map_mass_momentum_to_nodes() noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 
   // Map mass and momentum to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
     nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                           mass_ * shapefn_[mapped_node]);
+                           mass_ * shapefn_[i]);
     nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[mapped_node] * velocity_);
+                               mass_ * shapefn_[i] * velocity_);
   }
 }
 
 //! Map multimaterial properties to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_multimaterial_mass_momentum_to_nodes() noexcept {
+void mpm::ParticleFinite<Tdim>::map_multimaterial_mass_momentum_to_nodes() noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 
@@ -551,8 +547,7 @@ void mpm::Particle<Tdim>::map_multimaterial_mass_momentum_to_nodes() noexcept {
 
   // Map mass and momentum to nodal property taking into account the material id
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
-    nodal_mass(0, 0) = mass_ * shapefn_[mapped_node];
+    nodal_mass(0, 0) = mass_ * shapefn_[i];
     nodes_[i]->update_property(true, "masses", nodal_mass, this->material_id(),
                                1);
     nodes_[i]->update_property(true, "momenta", velocity_ * nodal_mass,
@@ -562,15 +557,14 @@ void mpm::Particle<Tdim>::map_multimaterial_mass_momentum_to_nodes() noexcept {
 
 //! Map multimaterial displacements to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_multimaterial_displacements_to_nodes() noexcept {
+void mpm::ParticleFinite<Tdim>::map_multimaterial_displacements_to_nodes() noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 
   // Map displacements to nodal property and divide it by the respective
   // nodal-material mass
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
-    const auto& displacement = mass_ * shapefn_[mapped_node] * displacement_;
+    const auto& displacement = mass_ * shapefn_[i] * displacement_;
     nodes_[i]->update_property(true, "displacements", displacement,
                                this->material_id(), Tdim);
   }
@@ -578,7 +572,7 @@ void mpm::Particle<Tdim>::map_multimaterial_displacements_to_nodes() noexcept {
 
 //! Map multimaterial domain gradients to nodes
 template <unsigned Tdim>
-void mpm::Particle<
+void mpm::ParticleFinite<
     Tdim>::map_multimaterial_domain_gradients_to_nodes() noexcept {
   // Check if particle volume is set
   assert(volume_ != std::numeric_limits<double>::max());
@@ -587,8 +581,7 @@ void mpm::Particle<
   // the gradient of the particle volume
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     Eigen::Matrix<double, Tdim, 1> gradient;
-    const int mapped_node = i;//this->nodes_local_ids_[i];
-    for (unsigned j = 0; j < Tdim; ++j) gradient[j] = volume_ * dn_dx_(mapped_node, j);
+    for (unsigned j = 0; j < Tdim; ++j) gradient[j] = volume_ * dn_dx_(i, j);
     nodes_[i]->update_property(true, "domain_gradients", gradient,
                                this->material_id(), Tdim);
   }
@@ -596,118 +589,278 @@ void mpm::Particle<
 
 // Compute strain rate of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_rate(
+inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<1>::compute_strain_rate(
     const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
+  stretch_tensor_ *= 0;
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 1, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(mapped_node, 0) * vel[0];
+    strain_rate[0] += dn_dx(i, 0) * vel[0];
+    stretch_tensor_(0,0) += dn_dx(i, 0) * vel[0];
   }
 
-  if (std::fabs(strain_rate(0)) < 1.E-15) strain_rate[0] = 0.;
+  //if (std::fabs(strain_rate(0)) < 1.E-15) strain_rate[0] = 0.;
   return strain_rate;
 }
 
 // Compute strain rate of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_rate(
+inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<2>::compute_strain_rate(
     const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
+  stretch_tensor_ *= 0;
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(mapped_node, 0) * vel[0];
-    strain_rate[1] += dn_dx(mapped_node, 1) * vel[1];
-    strain_rate[3] += dn_dx(mapped_node, 1) * vel[0] + dn_dx(mapped_node, 0) * vel[1];
+    strain_rate[0] += dn_dx(i, 0) * vel[0];
+    strain_rate[1] += dn_dx(i, 1) * vel[1];
+    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+    //Stretch tensor stuff as well
+    stretch_tensor_(0,0) += dn_dx(i, 0) * vel[0];
+    stretch_tensor_(1,1) += dn_dx(i, 1) * vel[1];
+    stretch_tensor_(0,1) += dn_dx(i, 1) * vel[0];
+    stretch_tensor_(1,0) += dn_dx(i, 0) * vel[1];
   }
 
   if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
   if (std::fabs(strain_rate[1]) < 1.E-15) strain_rate[1] = 0.;
   if (std::fabs(strain_rate[3]) < 1.E-15) strain_rate[3] = 0.;
+
+  //for(int x = 0;x < 2;++x){
+  //    for(int y = 0;y < 2;++y){
+  //      if (std::fabs(stretch_tensor_(x,y)) < 1.E-15) stretch_tensor_(x,y) = 0.;
+  //    }
+  //}
   return strain_rate;
 }
 
 // Compute strain rate of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_rate(
+inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<3>::compute_strain_rate(
     const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(mapped_node, 0) * vel[0];
-    strain_rate[1] += dn_dx(mapped_node, 1) * vel[1];
-    strain_rate[2] += dn_dx(mapped_node, 2) * vel[2];
-    strain_rate[3] += dn_dx(mapped_node, 1) * vel[0] + dn_dx(mapped_node, 0) * vel[1];
-    strain_rate[4] += dn_dx(mapped_node, 2) * vel[1] + dn_dx(mapped_node, 1) * vel[2];
-    strain_rate[5] += dn_dx(mapped_node, 2) * vel[0] + dn_dx(mapped_node, 0) * vel[2];
+    strain_rate[0] += dn_dx(i, 0) * vel[0];
+    strain_rate[1] += dn_dx(i, 1) * vel[1];
+    strain_rate[2] += dn_dx(i, 2) * vel[2];
+    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+    strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
+    strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+
+    stretch_tensor_(0,0) += dn_dx(i, 0) * vel[0];
+    stretch_tensor_(1,1) += dn_dx(i, 1) * vel[1];
+    stretch_tensor_(2,2) += dn_dx(i, 2) * vel[1];
+    stretch_tensor_(0,1) += dn_dx(i, 1) * vel[0];
+    stretch_tensor_(0,2) += dn_dx(i, 2) * vel[0];
+    stretch_tensor_(1,0) += dn_dx(i, 0) * vel[1];
+    stretch_tensor_(1,2) += dn_dx(i, 2) * vel[1];
+    stretch_tensor_(2,0) += dn_dx(i, 0) * vel[2];
+    stretch_tensor_(2,1) += dn_dx(i, 2) * vel[2];
   }
 
-  for (unsigned i = 0; i < strain_rate.size(); ++i)
-    if (std::fabs(strain_rate[i]) < 1.E-15) strain_rate[i] = 0.;
+  //for (unsigned i = 0; i < strain_rate.size(); ++i)
+  //  if (std::fabs(strain_rate[i]) < 1.E-15) strain_rate[i] = 0.;
   return strain_rate;
+}
+
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<2>::compute_vorticity_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+  }
+
+  for (unsigned i = 3; i < vorticity.size(); ++i)
+    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
+  return vorticity;
+}
+
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<3>::compute_vorticity_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+    vorticity[3] += dn_dx(i, 1) * vel[0] - dn_dx(i, 0) * vel[1];
+    vorticity[4] += dn_dx(i, 2) * vel[1] - dn_dx(i, 1) * vel[2];
+    vorticity[5] += dn_dx(i, 2) * vel[0] - dn_dx(i, 0) * vel[2];
+  }
+
+  for (unsigned i = 3; i < vorticity.size(); ++i)
+    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
+  return vorticity;
 }
 
 // Compute strain of the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
+void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   // Assign strain rate
   strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
-  // Update strain
-  strain_ += dstrain_;
+  stretch_tensor_ *= dt;
 
+  // Linear strain increment
+
+  /*
+  strain_ += dstrain_;
   // Compute at centroid
   // Strain rate for reduced integration
   const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
-      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
-
+     this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+*/
+
+  //Logarithmic strain increment
+  //Voight to matrix deformation increment
+  //stress_ = stress_ * deformation_gradient_.determinant();
+  Eigen::Matrix<double,3,3> df = Eigen::Matrix<double,3,3>::Identity() + stretch_tensor_;
+  //Update deformation gradient
+  deformation_gradient_ = df * deformation_gradient_;
+  Eigen::Matrix<double,6,1> strain_prev = strain_;
+  if (deformation_gradient_.determinant() <= 0)
+  {
+    console_->error("Negative volume!\n");
+    abort();
+  }
+  strain_(3) /= 2.0;
+  strain_(4) /= 2.0;
+  strain_(5) /= 2.0;
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(this->voigt_to_matrix(strain_));
+  if (eigensolver.info() != Eigen::Success)
+  {
+    console_->error("No eigenvectors in strain matrix?\n");
+    abort();
+  }
+  auto eigen_values = eigensolver.eigenvalues();
+  auto eigen_vectors = eigensolver.eigenvectors();
+  auto trial_lgs = df * (eigen_vectors
+                         * (eigen_values.array() * 2.0).exp().matrix().asDiagonal()
+                         * eigen_vectors.transpose()) * df.transpose();
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> trialeigensolver(trial_lgs);
+  if (trialeigensolver.info() != Eigen::Success)
+  {
+    console_->error("No eigenvectors in trial strain matrix?\n");
+    abort();
+  }
+  auto l = trialeigensolver.eigenvalues();
+  auto v = trialeigensolver.eigenvectors();
+  strain_ = (this->matrix_to_voigt(v * l.array().log().matrix().asDiagonal() * v.transpose()).array() * 0.5).matrix();
+  strain_(3) *= 2.0;
+  strain_(4) *= 2.0;
+  strain_(5) *= 2.0;
+  dstrain_ = strain_ - strain_prev;
+  //Update size
+  Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
+  for(int i = 0; i < Tdim;++i){
+      natural_size_(i) = natural_size_(i) * dlength(i,i);
+  }
+  dvolumetric_strain_ = df.determinant() - 1;
+  //Volume ratio can be determined from det df
+  //Compute this elsewhere
   volumetric_strain_centroid_ += dvolumetric_strain_;
+  compute_vorticity(dt);
+}
+
+template <unsigned Tdim>
+void mpm::ParticleFinite<Tdim>::compute_vorticity(double dt) noexcept {
+  // Assign strain rate
+  auto vorticity_rate = this->compute_vorticity_rate(dn_dx_, mpm::ParticlePhase::Solid);
+  // Update dstrain
+  vorticity_ = vorticity_rate * dt;
+}
+
+template <unsigned Tdim>
+Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Eigen::Matrix<double,6,1> stress)
+{
+  const Eigen::Matrix<double,3,3> w = this->vorticity_matrix(vorticity_);
+  const auto b = deformation_gradient_ * deformation_gradient_.transpose();
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(b);
+  if (eigensolver.info() != Eigen::Success)
+  {
+    console_->error("No eigenvectors in logspin left cauchy green strain matrix?\n");
+    abort();
+  }
+  auto l = eigensolver.eigenvalues();
+  auto v = eigensolver.eigenvectors();
+  auto omega = w;
+  for(int i = 0;i < 3;++i){
+    for(int j = 0;j < 3;++j){
+      if(i != j){
+        auto lambda_a = l(i,i);
+        auto lambda_b = l(j,j);
+        if(std::abs(l(i,i)-l(j,j)) < 1e-6)
+        {
+          omega += ((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
+              * v.col(i) * v.col(i).transpose()
+              * stretch_tensor_
+              * v.col(j) * v.col(j).transpose();
+        }
+      }
+    }
+  }
+  auto stress_matrix = this->voigt_to_matrix(stress);
+  return this->matrix_to_voigt(this->voigt_to_matrix(stress) - ((omega * stress_matrix) - (stress_matrix * omega)));
+}
+
+template <unsigned Tdim>
+Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_jaumann(Eigen::Matrix<double,6,1> stress)
+{
+  Eigen::Matrix<double,3,3> w = this->vorticity_matrix(vorticity_);
+  auto stress_matrix = this->voigt_to_matrix(stress);
+  return this->matrix_to_voigt(this->voigt_to_matrix(stress) - ((w * stress_matrix) - (stress_matrix * w)));
 }
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress(float dt_) noexcept {
+void mpm::ParticleFinite<Tdim>::compute_stress(const float dt_) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
-  state_variables_[mpm::ParticlePhase::Solid]["dt"] = dt_;
   // Calculate stress
-  this->stress_ =
+  state_variables_[mpm::ParticlePhase::Solid]["dt"] = dt_;
+  //Use our previous kirchoff stress to increment using our log strains
+  this->stress_kirchoff_ =
       (this->material())
-          ->compute_stress(stress_, dstrain_, this,
+          ->compute_stress(stress_kirchoff_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
+  //this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
+  //this->stress_ = objectify_stress_logspin(this->stress_);
+  //Compute our cauchy stress
+  this->stress_ = this->stress_kirchoff_ / deformation_gradient_.determinant();
+  //this->stress_ = this->stress_;
 }
 
 //! Map body force
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
+void mpm::ParticleFinite<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
   // Compute nodal body forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
+  for (unsigned i = 0; i < nodes_.size(); ++i)
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                     (pgravity * mass_ * shapefn_(mapped_node)));
-  }
+                                     (pgravity * mass_ * shapefn_(i)));
 }
 
 //! Map internal force
 template <>
-inline void mpm::Particle<1>::map_internal_force() noexcept {
+inline void mpm::ParticleFinite<1>::map_internal_force() noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 1, 1> force;
-    const int mapped_node = i;//this->nodes_local_ids_[i];
-    force[0] = -1. * dn_dx_(mapped_node, 0) * volume_ * stress_[0];
+    force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
@@ -715,14 +868,13 @@ inline void mpm::Particle<1>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<2>::map_internal_force() noexcept {
+inline void mpm::ParticleFinite<2>::map_internal_force() noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 2, 1> force;
-    const int mapped_node = i;//this->nodes_local_ids_[i];
-    force[0] = dn_dx_(mapped_node, 0) * stress_[0] + dn_dx_(mapped_node, 1) * stress_[3];
-    force[1] = dn_dx_(mapped_node, 1) * stress_[1] + dn_dx_(mapped_node, 0) * stress_[3];
+    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
+    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
 
     force *= -1. * this->volume_;
 
@@ -732,20 +884,19 @@ inline void mpm::Particle<2>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<3>::map_internal_force() noexcept {
+inline void mpm::ParticleFinite<3>::map_internal_force() noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
-    const int mapped_node = i;//this->nodes_local_ids_[i];
     Eigen::Matrix<double, 3, 1> force;
-    force[0] = dn_dx_(mapped_node, 0) * stress_[0] + dn_dx_(mapped_node, 1) * stress_[3] +
-               dn_dx_(mapped_node, 2) * stress_[5];
+    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
+               dn_dx_(i, 2) * stress_[5];
 
-    force[1] = dn_dx_(mapped_node, 1) * stress_[1] + dn_dx_(mapped_node, 0) * stress_[3] +
-               dn_dx_(mapped_node, 2) * stress_[4];
+    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
+               dn_dx_(i, 2) * stress_[4];
 
-    force[2] = dn_dx_(mapped_node, 2) * stress_[2] + dn_dx_(mapped_node, 1) * stress_[4] +
-               dn_dx_(mapped_node, 0) * stress_[5];
+    force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
+               dn_dx_(i, 0) * stress_[5];
 
     force *= -1. * this->volume_;
 
@@ -755,7 +906,7 @@ inline void mpm::Particle<3>::map_internal_force() noexcept {
 
 // Assign velocity to the particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_velocity(
+bool mpm::ParticleFinite<Tdim>::assign_velocity(
     const Eigen::Matrix<double, Tdim, 1>& velocity) {
   // Assign velocity
   velocity_ = velocity;
@@ -764,7 +915,7 @@ bool mpm::Particle<Tdim>::assign_velocity(
 
 // Assign traction to the particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
+bool mpm::ParticleFinite<Tdim>::assign_traction(unsigned direction, double traction) {
   bool status = false;
   try {
     if (direction >= Tdim ||
@@ -785,20 +936,18 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
 
 //! Map traction force
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_traction_force() noexcept {
+void mpm::ParticleFinite<Tdim>::map_traction_force() noexcept {
   if (this->set_traction_) {
     // Map particle traction forces to nodes
-    for (unsigned i = 0; i < nodes_.size(); ++i) {
-      const int mapped_node = i;//this->nodes_local_ids_[i];
+    for (unsigned i = 0; i < nodes_.size(); ++i)
       nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                       (shapefn_[mapped_node] * traction_));
-    }
+                                       (shapefn_[i] * traction_));
   }
 }
 
 // Compute updated position of the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_updated_position(
+void mpm::ParticleFinite<Tdim>::compute_updated_position(
     double dt, bool velocity_update) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
@@ -806,22 +955,18 @@ void mpm::Particle<Tdim>::compute_updated_position(
   Eigen::Matrix<double, Tdim, 1> nodal_velocity =
       Eigen::Matrix<double, Tdim, 1>::Zero();
 
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
+  for (unsigned i = 0; i < nodes_.size(); ++i)
     nodal_velocity +=
-        shapefn_[mapped_node] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
-  }
+        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
 
   // Acceleration update
   if (!velocity_update) {
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
-    for (unsigned i = 0; i < nodes_.size(); ++i) {
-      const int mapped_node = i;//this->nodes_local_ids_[i];
-      nodal_acceleration += shapefn_[mapped_node] *
-                            nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
-    }
+    for (unsigned i = 0; i < nodes_.size(); ++i)
+      nodal_acceleration +=
+          shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
 
     // Update particle velocity from interpolated nodal acceleration
     this->velocity_ += nodal_acceleration * dt;
@@ -838,7 +983,7 @@ void mpm::Particle<Tdim>::compute_updated_position(
 
 //! Map particle pressure to nodes
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::map_pressure_to_nodes(unsigned phase) noexcept {
+bool mpm::ParticleFinite<Tdim>::map_pressure_to_nodes(unsigned phase) noexcept {
   // Mass is initialized
   assert(mass_ != std::numeric_limits<double>::max());
 
@@ -848,12 +993,9 @@ bool mpm::Particle<Tdim>::map_pressure_to_nodes(unsigned phase) noexcept {
       (state_variables_[phase].find("pressure") !=
        state_variables_[phase].end())) {
     // Map particle pressure to nodes
-    for (unsigned i = 0; i < nodes_.size(); ++i) {
-      const int mapped_node = i;//this->nodes_local_ids_[i];
+    for (unsigned i = 0; i < nodes_.size(); ++i)
       nodes_[i]->update_mass_pressure(
-          phase,
-          shapefn_[mapped_node] * mass_ * state_variables_[phase]["pressure"]);
-    }
+          phase, shapefn_[i] * mass_ * state_variables_[phase]["pressure"]);
 
     status = true;
   }
@@ -862,7 +1004,7 @@ bool mpm::Particle<Tdim>::map_pressure_to_nodes(unsigned phase) noexcept {
 
 // Compute pressure smoothing of the particle based on nodal pressure
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::compute_pressure_smoothing(unsigned phase) noexcept {
+bool mpm::ParticleFinite<Tdim>::compute_pressure_smoothing(unsigned phase) noexcept {
   // Assert
   assert(cell_ != nullptr);
 
@@ -873,10 +1015,8 @@ bool mpm::Particle<Tdim>::compute_pressure_smoothing(unsigned phase) noexcept {
 
     double pressure = 0.;
     // Update particle pressure to interpolated nodal pressure
-    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-      const int mapped_node = i;//this->nodes_local_ids_[i];
-      pressure += shapefn_[mapped_node] * nodes_[i]->pressure(phase);
-    }
+    for (unsigned i = 0; i < this->nodes_.size(); ++i)
+      pressure += shapefn_[i] * nodes_[i]->pressure(phase);
 
     state_variables_[phase]["pressure"] = pressure;
     status = true;
@@ -886,7 +1026,7 @@ bool mpm::Particle<Tdim>::compute_pressure_smoothing(unsigned phase) noexcept {
 
 //! Apply particle velocity constraints
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::apply_particle_velocity_constraints(unsigned dir,
+void mpm::ParticleFinite<Tdim>::apply_particle_velocity_constraints(unsigned dir,
                                                               double velocity) {
   // Set particle velocity constraint
   this->velocity_(dir) = velocity;
@@ -894,7 +1034,7 @@ void mpm::Particle<Tdim>::apply_particle_velocity_constraints(unsigned dir,
 
 //! Return particle scalar data
 template <unsigned Tdim>
-inline double mpm::Particle<Tdim>::scalar_data(
+inline double mpm::ParticleFinite<Tdim>::scalar_data(
     const std::string& property) const {
   return (this->scalar_properties_.find(property) !=
           this->scalar_properties_.end())
@@ -904,7 +1044,7 @@ inline double mpm::Particle<Tdim>::scalar_data(
 
 //! Return particle vector data
 template <unsigned Tdim>
-inline Eigen::Matrix<double, Tdim, 1> mpm::Particle<Tdim>::vector_data(
+inline Eigen::Matrix<double, Tdim, 1> mpm::ParticleFinite<Tdim>::vector_data(
     const std::string& property) const {
   return (this->vector_properties_.find(property) !=
           this->vector_properties_.end())
@@ -915,7 +1055,7 @@ inline Eigen::Matrix<double, Tdim, 1> mpm::Particle<Tdim>::vector_data(
 
 //! Return particle tensor data
 template <unsigned Tdim>
-inline Eigen::VectorXd mpm::Particle<Tdim>::tensor_data(
+inline Eigen::VectorXd mpm::ParticleFinite<Tdim>::tensor_data(
     const std::string& property) const {
   return (this->tensor_properties_.find(property) !=
           this->tensor_properties_.end())
@@ -926,14 +1066,14 @@ inline Eigen::VectorXd mpm::Particle<Tdim>::tensor_data(
 
 //! Assign material id of this particle to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::append_material_id_to_nodes() const {
+void mpm::ParticleFinite<Tdim>::append_material_id_to_nodes() const {
   for (unsigned i = 0; i < nodes_.size(); ++i)
     nodes_[i]->append_material_id(this->material_id());
 }
 
 //! Assign neighbour particles
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::assign_neighbours(
+void mpm::ParticleFinite<Tdim>::assign_neighbours(
     const std::vector<mpm::Index>& neighbours) {
   neighbours_ = neighbours;
   neighbours_.erase(std::remove(neighbours_.begin(), neighbours_.end(), id_),
@@ -942,7 +1082,7 @@ void mpm::Particle<Tdim>::assign_neighbours(
 
 //! Compute size of serialized particle data
 template <unsigned Tdim>
-int mpm::Particle<Tdim>::compute_pack_size() const {
+int mpm::ParticleFinite<Tdim>::compute_pack_size() const {
   int total_size = 0;
   int partial_size;
 #ifdef USE_MPI
@@ -996,7 +1136,7 @@ int mpm::Particle<Tdim>::compute_pack_size() const {
 
 //! Serialize particle data
 template <unsigned Tdim>
-std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
+std::vector<uint8_t> mpm::ParticleFinite<Tdim>::serialize() {
   // Compute pack size
   if (pack_size_ == 0) pack_size_ = compute_pack_size();
   // Initialize data buffer
@@ -1089,7 +1229,7 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
 
 //! Deserialize particle data
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::deserialize(
+void mpm::ParticleFinite<Tdim>::deserialize(
     const std::vector<uint8_t>& data,
     std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) {
   uint8_t* data_ptr = const_cast<uint8_t*>(&data[0]);
@@ -1191,56 +1331,4 @@ void mpm::Particle<Tdim>::deserialize(
   }
 
 #endif
-}
-
-template <unsigned Tdim>
-Eigen::Matrix<double,3,3> mpm::Particle<Tdim>::vorticity_matrix(Eigen::Matrix<double,6,1> voigt) {
-  return (Eigen::Matrix3d() <<
-          voigt(0), voigt(3), voigt(5),
-          -voigt(3), voigt(1), voigt(4),
-          -voigt(5), -voigt(4), voigt(2)).finished();
-}
-
-template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_vorticity_rate(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rate
-  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
-    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
-    vorticity[3] += dn_dx(mapped_node, 1) * vel[0] - dn_dx(mapped_node, 0) * vel[1];
-  }
-
-  for (unsigned i = 3; i < vorticity.size(); ++i)
-    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
-  return vorticity;
-}
-
-template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_vorticity_rate(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rate
-  Eigen::Matrix<double, 6, 1> vorticity = Eigen::Matrix<double, 6, 1>::Zero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const int mapped_node = i;//this->nodes_local_ids_[i];
-    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    vorticity[3] += dn_dx(mapped_node, 1) * vel[0] - dn_dx(mapped_node, 0) * vel[1];
-    vorticity[4] += dn_dx(mapped_node, 2) * vel[1] - dn_dx(mapped_node, 1) * vel[2];
-    vorticity[5] += dn_dx(mapped_node, 2) * vel[0] - dn_dx(mapped_node, 0) * vel[2];
-  }
-
-  for (unsigned i = 3; i < vorticity.size(); ++i)
-    if (std::fabs(vorticity[i]) < 1.E-15) vorticity[i] = 0.;
-  return vorticity;
-}
-
-template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_vorticity(double dt) noexcept {
-  // Assign strain rate
-  auto vorticity_rate = this->compute_vorticity_rate(dn_dx_, mpm::ParticlePhase::Solid);
-  // Update dstrain
-  vorticity_ = vorticity_rate * dt;
 }

@@ -6,6 +6,9 @@
 #include "mohr_coulomb.h"
 #include "newtonian.h"
 #include "norsand.h"
+#include "maxwell.h"
+#include "norton_hoff.h"
+#include "glen.h"
 
 // Bingham 2D
 static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
@@ -57,6 +60,7 @@ static Register<mpm::Material<2>, mpm::NorSand<2>, unsigned, const Json&>
 static Register<mpm::Material<3>, mpm::NorSand<3>, unsigned, const Json&>
     nor_sand_3d("NorSand3D");
 
+
 // LinearElasticDamage 2D
 static Register<mpm::Material<2>, mpm::LinearElasticDamage<2>, unsigned, const Json&>
     linear_elastic_damage_2d("LinearElasticDamage2D");
@@ -64,3 +68,23 @@ static Register<mpm::Material<2>, mpm::LinearElasticDamage<2>, unsigned, const J
 // LinearElasticDamage 3D
 static Register<mpm::Material<3>, mpm::LinearElasticDamage<3>, unsigned, const Json&>
     linear_elastic_damage_3d("LinearElasticDamage3D");
+    
+// Maxwell 2D
+static Register<mpm::Material<2>, mpm::Maxwell<2>, unsigned, const Json&>
+    maxwell_2d("Maxwell2D");
+// Maxwell 2D
+static Register<mpm::Material<3>, mpm::Maxwell<3>, unsigned, const Json&>
+    maxwell_3d("Maxwell3D");
+
+// Norton-hoff 3D
+static Register<mpm::Material<2>, mpm::Norton_Hoff<2>, unsigned, const Json&>
+    norton_hoff_2d("NortonHoff2D");
+
+// Norton-hoff 3D
+static Register<mpm::Material<3>, mpm::Norton_Hoff<3>, unsigned, const Json&>
+    norton_hoff_3d("NortonHoff3D");
+
+// Glen 2d
+static Register<mpm::Material<2>, mpm::Glen<2>, unsigned, const Json&>
+    glen_2d("Glen2D");
+

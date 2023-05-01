@@ -48,6 +48,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   int mpi_size = 1;
 
 #ifdef USE_MPI
+  console_->info("Using MPI");
   // Get MPI rank
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   // Get number of MPI ranks
