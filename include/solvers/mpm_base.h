@@ -38,6 +38,7 @@ enum class VariableType { Scalar, Vector, Tensor };
 //! Damping type
 //! None: No damping is specified
 //! Cundall: Cundall damping
+//! Viscous: Viscous damping
 enum class Damping { None, Cundall, Viscous };
 
 //! MPMBase class

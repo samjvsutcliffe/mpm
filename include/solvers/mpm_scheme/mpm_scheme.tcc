@@ -87,7 +87,34 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
 
   // Iterate over each particle to compute stress
   mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1, dt_));
+      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
+  
+  const bool local_damage = false;
+  // Update damage
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::compute_damage_increment, std::placeholders::_1, dt_, local_damage));
+
+  if(!local_damage)
+  {
+	  mesh_->damage_mesh_->reset();
+	  //mesh_->damage_mesh_->PopulateMesh(mesh_->particles());
+	  mesh_->iterate_over_particles(
+	      std::bind(&mpm::DamageMesh<Tdim>::AddParticle,
+                        mesh_->damage_mesh_.get(), std::placeholders::_1));
+	  const double delocal_distance = 50;
+      //delocalise our particles using the whole mesh
+	  mesh_->iterate_over_particles(
+		  [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> & p) {
+			mesh_->damage_mesh_->iterate_over_neighbours(
+                &mpm::ParticleBase<Tdim>::delocalise_damage,
+				*p,
+				delocal_distance);
+		  }
+	  );
+  }
+
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::apply_damage, std::placeholders::_1, dt_));
 }
 
 //! Pressure smoothing
@@ -177,22 +204,21 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
   if (damping_type == "Cundall") {
-
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
                   std::placeholders::_1, phase, dt_, damping_factor),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
   } else if (damping_type == "Viscous") {
     mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_viscous,
-                  std::placeholders::_1, phase, dt_, damping_factor),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-  }
-  else
+                            std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_viscous,
+                                                  std::placeholders::_1, phase, dt_, damping_factor),
+                                    std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  } else {
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
                   std::placeholders::_1, phase, dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  }
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

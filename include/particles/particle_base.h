@@ -225,6 +225,18 @@ class ParticleBase {
   //! Compute stress
   virtual void compute_stress(const float dt_) noexcept = 0;
 
+  //! Compute damage increment
+  virtual void compute_damage_increment(double dt,bool local) noexcept = 0;
+
+  //! Apply damage increment
+  virtual void apply_damage(double dt) noexcept = 0;
+
+  //! Delocalise damage
+  virtual void delocalise_damage(ParticleBase<Tdim>& pother) noexcept {};
+
+  //! Delocalise damage
+  virtual double damage() const { return 0; };
+
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;
 
@@ -355,6 +367,20 @@ class ParticleBase {
   std::vector<mpm::dense_map> state_variables_;
   //! Vector of particle neighbour ids
   std::vector<mpm::Index> neighbours_;
+
+  Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat) {
+    return (Eigen::Matrix<double,6,1>() <<
+        mat(0,0), mat(1,1),mat(2,2),
+        mat(0,1), mat(1,2),mat(0,2)).finished();
+  };
+
+  Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt) {
+    return (Eigen::Matrix3d() <<
+        voigt(0), voigt(3), voigt(5),
+        voigt(3), voigt(1), voigt(4),
+        voigt(5), voigt(4), voigt(2)).finished();
+  };
+
 };  // ParticleBase class
 }  // namespace mpm
 
