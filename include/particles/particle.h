@@ -169,20 +169,12 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Reformat voigt notation symetric to matrix
   //! \param[in] voigt a symetric tensor in voigt notation
-  Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt);
-  Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat);
+  //Eigen::Matrix<double,3,3> voigt_to_matrix(Eigen::Matrix<double,6,1> voigt);
+  //Eigen::Matrix<double,6,1> matrix_to_voigt(Eigen::Matrix<double,3,3> mat);
 
   //! Reformat voigt notation vorticity to matrix
   //! \param[in] voigt an antisymetric tensor in voigt notation
   Eigen::Matrix<double,3,3> vorticity_matrix(Eigen::Matrix<double,6,1> voigt);
-
-  //! Apply logarithmic spin stress rate adjustment
-  //! \param[in] voigt notation stress
-  Eigen::Matrix<double,6,1> objectify_stress_logspin(Eigen::Matrix<double,6,1> stress);
-
-  //! Apply jaumann stress rate adjustment
-  //! \param[in] voigt notation stress
-  Eigen::Matrix<double,6,1> objectify_stress_jaumann(Eigen::Matrix<double,6,1> stress);
   //! Compute strain
   //! \param[in] dt Analysis time step
   void compute_strain(double dt) noexcept override;

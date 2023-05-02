@@ -763,7 +763,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   strain_(3) *= 2.0;
   strain_(4) *= 2.0;
   strain_(5) *= 2.0;
-  dstrain_ = strain_ - strain_prev;
+  //dstrain_ = strain_ - strain_prev;
   //Update size
   Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
   for(int i = 0; i < Tdim;++i){

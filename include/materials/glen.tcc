@@ -143,45 +143,14 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   const double dt = (*state_vars).at("dt");
   const auto& strain_rate = ptr->strain_rate();
   const auto& strain = ptr->strain();
-  const double volumetric_strain_rate = strain_rate(0) + strain_rate(1);
-  /*
   // Update pressure
   //
   // Volumetric stress component
   //const double rho = youngs_modulus_ / (2.0 * (1.0 - poisson_ratio_) * viscosity_);
-  const double viscosity =
-      compute_glen_viscosity(ptr->stress_cauchy(), std::pow(viscosity_,-viscous_power_), viscous_power_);
   //const double viscosity =
-  //    compute_glen_viscosity_strain(dstrain * (1/dt), viscosity_, viscous_power_);
-
-  Vector6d dev_stress = stress;
-  const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
-  for (int i = 0; i < 3; ++i) {
-    dev_stress(i) -= trace_stress;
-  }
-  Eigen::Matrix<double, 6, 1> elastic_inc = this->de_ * dstrain;
-  const double pressure_inc = (elastic_inc(0) + elastic_inc(1) + elastic_inc(2)) / 3.0;
-  for (int i = 0; i < 3; ++i) {
-    elastic_inc(i) -= pressure_inc;
-  }
-  const double new_pressure = trace_stress + pressure_inc;
-  //const double new_pressure = bulk_modulus_ * (strain(0) + strain(1) + strain(2));
-  // Update stress component
-  Eigen::Matrix<double, 6, 1> pstress = Eigen::Matrix<double, 6, 1>::Zero();
-  pstress(0) = new_pressure;
-  pstress(1) = new_pressure;
-  pstress(2) = new_pressure;
-  if (viscosity > 0.0) 
-  {
-    const double rho = (2.0 * (1.0 - poisson_ratio_) * viscosity) / youngs_modulus_;
-    const double rho_t = dt / rho;
-    const double rho_exp = std::exp(-rho_t);
-    const double lambda = (1 - rho_exp) * rho / dt;
-    pstress += (dev_stress.array() * rho_exp).matrix();
-    pstress += (elastic_inc.array() * lambda).matrix();
-  } else {
-    pstress += elastic_inc;
-  }
+  //    compute_glen_viscosity(ptr->stress_cauchy(), std::pow(viscosity_,-viscous_power_), viscous_power_);
+  const double viscosity =
+      compute_glen_viscosity_strain(dstrain * (1/dt), viscosity_, viscous_power_);
 
   Vector6d dev_stress = stress;
   const double trace_stress = (stress(0) + stress(1) + stress(2)) / 3.0;
@@ -195,8 +164,8 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
 	  const double relaxation_constant = youngs_modulus_ * ((*state_vars).at("dt")) / (2.0 * (1.0 - poisson_ratio_) * viscosity);
 	  pstress -= dev_stress * relaxation_constant;
   }
-  */
 
+  /*
   const double bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
   Eigen::Matrix<double, 6, 1> pstress = stress;
   const double trace_strain_rate = (strain_rate(0) + strain_rate(1) + strain_rate(2)) / 3.0;
@@ -213,9 +182,7 @@ Eigen::Matrix<double, 6, 1> mpm::Glen<2>::compute_stress(
   pstress(2) = new_pressure;
   pstress(3) = viscosity_ * strain_rate(3);
   pstress += dev_strain_rate * 2.0 * viscosity;
-  //pstress(0) -= dp;
-  //pstress(1) -= dp;
- // pstress(3) = viscosity_ * strain_rate(3);
+  */
   return pstress;
 }
 

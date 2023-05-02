@@ -31,3 +31,10 @@ Eigen::Matrix<double,3,3> mpm::ParticleBase<Tdim>::voigt_to_matrix(Eigen::Matrix
           voigt(3), voigt(1), voigt(4),
           voigt(5), voigt(4), voigt(2)).finished();
 }
+template <unsigned Tdim>
+Eigen::Matrix<double,3,3> mpm::ParticleBase<Tdim>::vorticity_matrix(Eigen::Matrix<double,6,1> voigt) {
+  return (Eigen::Matrix3d() <<
+      voigt(0), voigt(3), voigt(5),
+      -voigt(3), voigt(1), voigt(4),
+      -voigt(5), -voigt(4), voigt(2)).finished();
+};

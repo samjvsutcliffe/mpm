@@ -79,7 +79,7 @@ void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) n
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::ParticleDamage<Tdim>::compute_stress() noexcept {
+void mpm::ParticleDamage<Tdim>::compute_stress(float dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Calculate stress

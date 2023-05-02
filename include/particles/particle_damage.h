@@ -48,7 +48,7 @@ class ParticleDamage : public Particle<Tdim> {
   ParticleDamage& operator=(const ParticleDamage<Tdim>&) = delete;
 
   //! Compute stress
-  void compute_stress() noexcept override;
+  void compute_stress(float dt) noexcept override;
 
   //! Return damage at a particle
   double damage() const override { return damage_; }
