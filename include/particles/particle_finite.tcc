@@ -785,7 +785,7 @@ void mpm::ParticleFinite<Tdim>::compute_vorticity(double dt) noexcept {
 }
 
 template <unsigned Tdim>
-Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Eigen::Matrix<double,6,1> stress)
+Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Eigen::Matrix<double,6,1> stress_inc,Eigen::Matrix<double,6,1> stress)
 {
   const Eigen::Matrix<double,3,3> w = this->vorticity_matrix(vorticity_);
   const auto b = deformation_gradient_ * deformation_gradient_.transpose();
@@ -797,15 +797,17 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Ei
   }
   auto l = eigensolver.eigenvalues();
   auto v = eigensolver.eigenvectors();
-  auto omega = w;
+  Eigen::Matrix<double,3,3> omega = w;
   for(int i = 0;i < 3;++i){
     for(int j = 0;j < 3;++j){
       if(i != j){
         auto lambda_a = l(i,i);
         auto lambda_b = l(j,j);
-        if(std::abs(l(i,i)-l(j,j)) < 1e-6)
+        if(std::abs(l(i,i)-l(j,j)) > 1e-6)
         {
-          omega += ((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
+          omega += (((1 + (lambda_a / lambda_j)) /
+                    (1 - (lambda_a / lambda_j))) + ((2/(std::log(lambda_a) - std::log(lambda_b)))))
+              //((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
               * v.col(i) * v.col(i).transpose()
               * stretch_tensor_
               * v.col(j) * v.col(j).transpose();
@@ -814,7 +816,7 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Ei
     }
   }
   auto stress_matrix = this->voigt_to_matrix(stress);
-  return this->matrix_to_voigt(this->voigt_to_matrix(stress) - ((omega * stress_matrix) - (stress_matrix * omega)));
+  return this->matrix_to_voigt(this->voigt_to_matrix(stress_inc) - ((stress_matrix * omega) - (omega * stress_matrix)));
 }
 
 template <unsigned Tdim>

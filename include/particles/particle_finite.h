@@ -167,7 +167,7 @@ class ParticleFinite : public ParticleBase<Tdim> {
 
   //! Apply logarithmic spin stress rate adjustment
   //! \param[in] voigt notation stress
-  Eigen::Matrix<double,6,1> objectify_stress_logspin(Eigen::Matrix<double,6,1> stress);
+  Eigen::Matrix<double,6,1> objectify_stress_logspin(Eigen::Matrix<double,6,1> stress_inc, Eigen::Matrix<double,6,1> stress);
 
   //! Apply jaumann stress rate adjustment
   //! \param[in] voigt notation stress
