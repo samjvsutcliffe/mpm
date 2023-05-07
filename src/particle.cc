@@ -6,8 +6,10 @@
 
 namespace mpm {
 // ParticleType
-std::map<std::string, int> ParticleType = {{"P2D", 0}, {"P3D", 1}, {"P2D_DAMAGE", 2}, {"P3D_DAMAGE", 3}};
-std::map<int, std::string> ParticleTypeName = {{0, "P2D"}, {1, "P3D"}, {2, "P2D_DAMAGE"}, {3, "P3D_DAMAGE"}};
+std::map<std::string, int> ParticleType = {
+    {"P2D", 0}, {"P3D", 1}, {"P2D_DAMAGE", 2}, {"P3D_DAMAGE", 3}, {"P2DFS", 4}, {"P3DFS", 5}};
+    std::map<int, std::string> ParticleTypeName = {
+        {0, "P2D"}, {1, "P3D"}, {2, "P2D_DAMAGE"}, {3, "P3D_DAMAGE"}, {4, "P2DFS"}, {5, "P3DFS"} };
 }  // namespace mpm
 
 // Particle2D (2 Dim)

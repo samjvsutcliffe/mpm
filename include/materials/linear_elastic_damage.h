@@ -55,6 +55,7 @@ class LinearElasticDamage : public LinearElastic<Tdim> {
   using Material<Tdim>::console_;
   double critical_stress_{0};
   double damage_rate_{0};
+  double local_length_{0};
 
 };  // LinearElasticDamage class
 }  // namespace mpm

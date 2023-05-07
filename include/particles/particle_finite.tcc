@@ -644,6 +644,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<3>::compute_strain_rate(
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
+  stretch_tensor_ *= 0;
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
@@ -805,8 +806,8 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Ei
         auto lambda_b = l(j,j);
         if(std::abs(l(i,i)-l(j,j)) > 1e-6)
         {
-          omega += (((1 + (lambda_a / lambda_j)) /
-                    (1 - (lambda_a / lambda_j))) + ((2/(std::log(lambda_a) - std::log(lambda_b)))))
+          omega += (((1 + (lambda_a / lambda_b)) /
+                    (1 - (lambda_a / lambda_b))) + ((2/(std::log(lambda_a) - std::log(lambda_b)))))
               //((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
               * v.col(i) * v.col(i).transpose()
               * stretch_tensor_

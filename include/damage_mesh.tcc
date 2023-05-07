@@ -25,15 +25,31 @@ inline void mpm::DamageMesh<Tdim>::iterate_over_neighbours(Toper oper,mpm::Parti
         for(int x = -nodal_size;x<=nodal_size;++x) {
             IndexDim di = (IndexDim() << x).finished();
             auto & node = GetNode(index + di);
-            ///node.iterate_over_particles(std::bind(oper,&p,std::placeholders::_1));
+            //node.iterate_over_particles(std::bind(oper,&p,std::placeholders::_1));
         }
     }
     if constexpr (Tdim == 2){
         for(int x = -nodal_size;x<=nodal_size;++x) {
             for(int y = -nodal_size;y<=nodal_size;++y) {
                 IndexDim di = (Eigen::Matrix<int, Tdim, 1>() << x, y).finished();
+              if (InBounds(index + di)) {
                 auto & node = GetNode(index + di);
-                //node.iterate_over_particles(std::bind(oper,&p,std::placeholders::_1));
+                node.iterate_over_particles(std::bind(oper,&p,std::placeholders::_1));
+              }
+            }
+        }
+    }
+    if constexpr (Tdim == 3){
+        for(int x = -nodal_size;x<=nodal_size;++x) {
+            for(int y = -nodal_size;y<=nodal_size;++y) {
+            for (int z = -nodal_size; z <= nodal_size; ++z) {
+              IndexDim di = (Eigen::Matrix<int, Tdim, 1>() << x, y, z).finished();
+              if (InBounds(index + di)) {
+                auto& node = GetNode(index + di);
+                node.iterate_over_particles(
+                    std::bind(oper, &p, std::placeholders::_1));
+              }
+            }
             }
         }
     }

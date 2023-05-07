@@ -104,13 +104,18 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
 	  const double delocal_distance = 50;
       //delocalise our particles using the whole mesh
 	  mesh_->iterate_over_particles(
-		  [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> & p) {
+		  [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> p) {
 			mesh_->damage_mesh_->iterate_over_neighbours(
-                &mpm::ParticleBase<Tdim>::delocalise_damage,
-				*p,
-				delocal_distance);
+                    std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage,std::placeholders::_1,std::placeholders::_2),
+                    *p.get(),
+				    delocal_distance);
 		  }
 	  );
+      
+      //Fix up our delocalised accumulations
+      mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage_post,
+        std::placeholders::_1));
   }
 
   mesh_->iterate_over_particles(std::bind(
@@ -241,4 +246,16 @@ inline void mpm::MPMScheme<Tdim>::locate_particles(bool locate_particles) {
   if (!unlocatable_particles.empty() && !locate_particles)
     for (const auto& remove_particle : unlocatable_particles)
       mesh_->remove_particle(remove_particle);
+}
+
+// Locate particles
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::remove_damaged_particles() {
+  auto damaged_particles = mesh_->locate_damaged_particles();
+  if (!damaged_particles.empty()) {
+      //console_->info("Fully damaged particles found");
+	  for (const auto& remove_particle : damaged_particles) {
+		mesh_->remove_particle(remove_particle);
+	  }
+  }
 }

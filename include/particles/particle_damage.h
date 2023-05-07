@@ -10,6 +10,7 @@
 #include "cell.h"
 #include "logger.h"
 #include "particle.h"
+#include "particle_finite.h"
 #include <unsupported/Eigen/MatrixFunctions>
 
 namespace mpm {
@@ -19,7 +20,7 @@ namespace mpm {
 //! \details ParticleDamage class: id_ and coordinates.
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class ParticleDamage : public Particle<Tdim> {
+class ParticleDamage : public ParticleFinite<Tdim> {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
@@ -53,6 +54,9 @@ class ParticleDamage : public Particle<Tdim> {
   //! Return damage at a particle
   double damage() const override { return damage_; }
 
+  //! Return damage increment at a particle
+  double damage_inc() const override { return damage_inc_; }
+
   //! Initialise properties
   void initialise() override;
 
@@ -64,6 +68,9 @@ class ParticleDamage : public Particle<Tdim> {
 
   //! Delocalise damage
   void delocalise_damage(ParticleBase<Tdim> & pother) noexcept override;
+
+  //! Delocalise damage
+  void delocalise_damage_post() noexcept override;
 
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2D_DAMAGE" : "P3D_DAMAGE"; }
@@ -80,6 +87,11 @@ class ParticleDamage : public Particle<Tdim> {
   using ParticleBase<Tdim>::material_id_;
   //! State variables
   using ParticleBase<Tdim>::state_variables_;
+  using ParticleFinite<Tdim>::stress_;
+  using ParticleFinite<Tdim>::dstrain_;
+  using ParticleFinite<Tdim>::scalar_properties_;
+  using ParticleFinite<Tdim>::vector_properties_;
+  using ParticleFinite<Tdim>::tensor_properties_;
 
  protected:
   double damage_inc_local_{0.}; 
@@ -90,6 +102,9 @@ class ParticleDamage : public Particle<Tdim> {
 
   double acc_damage_{0};
   double acc_volume_{0};
+  double local_length_{50};
+  double critical_stress_{0};
+  double damage_rate_{0};
   //! Stresses
   Eigen::Matrix<double, 6, 1> undamaged_stress_;
 

@@ -48,18 +48,19 @@ namespace mpm {
 template <unsigned Tdim>
 struct DamageNode {
  void reset(){
-     local_list.empty();
+     local_list.clear();
  }
- void AddParticle(mpm::ParticleBase<Tdim> & p){
+ void AddParticle(mpm::ParticleBase<Tdim> * p){
      node_mutex_.lock();
-     //local_list.emplace_back(&p);
+     local_list.emplace_back(p);
      node_mutex_.unlock();
  }
   template <typename Toper>
   inline void iterate_over_particles(Toper oper){
-      for(auto & p : local_list){
-      //    oper(p);
+      for(auto p : local_list){
+          oper(*p);
       }
+	  //oper();
     };
   //DamageNode() : node_mutex_(), local_list() {
   //}
@@ -117,6 +118,16 @@ class DamageMesh {
   //! Delete assignement operator
   DamageMesh& operator=(const DamageMesh<Tdim>&) = delete;
 
+  bool InBounds(IndexDim index){
+    for (int i = 0; i < Tdim; ++i)
+    {
+      if (index(i) < 0 || index(i) >= mesh_size(i)) {
+        return false;
+      }
+    }
+    return true;
+    //return (index >= Eigen::Zeros()) && (index < mesh_size);
+  }
   //! Find nearest node's index
   IndexDim PositionToIndex(Eigen::Matrix<double, Tdim, 1> position) {
     IndexDim index = (((position - offset) / resolution_)
@@ -146,25 +157,13 @@ class DamageMesh {
       for (auto nitr = nodes_.begin(); nitr != nodes_.end(); ++nitr) oper(*nitr);
     };
 
-  //template <typename Toper,class>
-  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance);
-  //template <typename Toper,class>
-  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance);
 
   template <typename Toper>
   inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance);
-  //template <typename Toper,Eigen::Matrix<int,Tdim,1>
-  //         class = typename std::enable_if<Tdim == 2>::type>
-  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
-  //}
-  //template <typename Toper,
-  //         class = typename std::enable_if<Tdim == 3>::type>
-  //inline void iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
-  //}
 
   void reset(){
-      //iterate_over_nodes(
-      //    std::bind(&mpm::DamageNode<Tdim>::reset, std::placeholders::_1));
+      iterate_over_nodes(
+          std::bind(&mpm::DamageNode<Tdim>::reset, std::placeholders::_1));
   };
 
   void PopulateMesh(Vector<ParticleBase<Tdim>>& particles) {
@@ -175,10 +174,11 @@ class DamageMesh {
       }
   };
   void AddParticle(const std::shared_ptr<ParticleBase<Tdim>> & particle) {
-    //auto position = particle->coordinates();
-    //Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
-    //DamageNode<Tdim> & node = GetNode(index);
-    //node.AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>>(particle));
+    auto position = particle->coordinates();
+    Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
+    DamageNode<Tdim> & node = GetNode(index);
+    //node.AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>&>(particle));
+    node.AddParticle(particle.get());
   };
 
 };  // DamageMesh class

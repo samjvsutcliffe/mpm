@@ -88,3 +88,7 @@ static Register<mpm::Material<3>, mpm::Norton_Hoff<3>, unsigned, const Json&>
 static Register<mpm::Material<2>, mpm::Glen<2>, unsigned, const Json&>
     glen_2d("Glen2D");
 
+// Glen 2d
+static Register<mpm::Material<3>, mpm::Glen<3>, unsigned, const Json&>
+    glen_3d("Glen3D");
+

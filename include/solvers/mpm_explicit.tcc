@@ -174,6 +174,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
+    mpm_scheme_->remove_damaged_particles();
 
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
