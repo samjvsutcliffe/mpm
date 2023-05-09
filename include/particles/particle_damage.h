@@ -89,6 +89,7 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   using ParticleBase<Tdim>::state_variables_;
   using ParticleFinite<Tdim>::stress_;
   using ParticleFinite<Tdim>::dstrain_;
+  using ParticleFinite<Tdim>::deformation_gradient_;
   using ParticleFinite<Tdim>::scalar_properties_;
   using ParticleFinite<Tdim>::vector_properties_;
   using ParticleFinite<Tdim>::tensor_properties_;

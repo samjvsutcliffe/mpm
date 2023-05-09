@@ -249,6 +249,12 @@ class ParticleBase {
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress_cauchy() const = 0;
 
+  //! Apply a corrotational stress rate adjustment
+  //! \param[in] stress increment voigt notation stress
+  Eigen::Matrix<double, 6, 1> objective_stress_increment(
+      Eigen::Matrix<double, 6, 1> stress_inc,
+      Eigen::Matrix<double, 6, 1> stress) {};
+
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
 

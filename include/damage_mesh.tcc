@@ -16,7 +16,7 @@ inline int mpm::DamageMesh<3>::GetNodeRawIndex(Eigen::Matrix<int, 3, 1> index) {
 template <unsigned Tdim>
 template <typename Toper>
 inline void mpm::DamageMesh<Tdim>::iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
-    const int nodal_size = std::ceil(distance/resolution_);
+    const int nodal_size = std::ceil((2*distance)/resolution_);
     IndexDim index = PositionToIndex(p.coordinates());
     //In this case we are forced to do if constepxr or something much harder
     //We are not allowed to partially specialise template arguments, i.e. <Tdim=1,Toper=Any>

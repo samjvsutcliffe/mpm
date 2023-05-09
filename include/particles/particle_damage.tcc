@@ -61,19 +61,21 @@ void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) n
     double inc = 0;
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
     es.compute(this->voigt_to_matrix(stress));
-    double s1 = es.eigenvalues().maxCoeff();
+    const Eigen::Matrix<double,3,1> l = es.eigenvalues();
+    const double s1 = es.eigenvalues().maxCoeff();
+    const double s2 = es.eigenvalues().minCoeff();
     local_length_ = (this->material())->template property<double>("local_length");
     critical_stress_ = (this->material())->template property<double>("critical_stress");
     damage_rate_ = (this->material())->template property<double>("damage_rate");
-    //double critical_stress = 1e5;
-    //double damage_rate = 0.1;
-    if (s1 > critical_stress_)
+    //const double stress_crit = s1;
+    const double stress_crit = std::sqrt(0.5 * (std::pow(std::max(l[2],0.0) - std::max(l[1],0.0), 2) + 
+                                                std::pow(std::max(l[1],0.0) - std::max(l[0],0.0), 2) +
+                                                std::pow(std::max(l[0],0.0) - std::max(l[2],0.0), 2)));
+    if (stress_crit > 0)
     {
       const double integrity = 1.0d - damage_;
       if (integrity > 0) {
-        //inc += (std::max(0.0,(s1/integrity) - critical_stress_)) * damage_rate_;
-
-        inc += (s1 / integrity);
+        inc += (stress_crit / integrity);
       }
     }
 
@@ -102,7 +104,8 @@ void mpm::ParticleDamage<Tdim>::compute_stress(float dt) noexcept {
   //    (this->material())
   //        ->compute_stress(undamaged_stress_, this->dstrain_, this,
   //                         &this->state_variables_[mpm::ParticlePhase::Solid]);
-  this->undamaged_stress_ = stress_;
+
+  this->undamaged_stress_ = stress_ * deformation_gradient_.determinant();
   //this->stress_ = undamaged_stress_;
 }
 
@@ -112,7 +115,7 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
   Eigen::Matrix<double,6,1> & stress = this->stress_;
 
   //Take our averaged y bar and apply damage rate to it
-  damage_inc_ = (std::max(0.0,damage_inc_ - critical_stress_)) * damage_rate_;
+  damage_inc_ = std::pow(std::max(0.0,damage_inc_ - critical_stress_),3.0) * damage_rate_;
   damage_ += damage_inc_ * dt;
   damage_ = std::min(std::max(damage_, 0.0), 1.0);
   if (damage_ > 0.) {
@@ -122,10 +125,9 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
     Eigen::Matrix<double,3,3> v = es.eigenvectors();
     for(int i = 0;i < 3;++i){
         if(l[i] > 0.0){
-            l[i] = l[i] * (1.0 - damage_);
+            l[i] *= (1.0 - damage_);
         }
     }
-    //stress = stress * (1.0 - damage_);
     this->stress_ = this->matrix_to_voigt(v * l.asDiagonal() * v.transpose());
   }
 }
@@ -135,7 +137,7 @@ void mpm::ParticleDamage<Tdim>::delocalise_damage(ParticleBase<Tdim> & pother) n
   //Throws if particle damage isn't 
   VectorDim dist = this->coordinates() - pother.coordinates();
   if (pother.damage() < 1) {
-    const double weight = std::exp((-4.0/(local_length_*local_length_) * dist.dot(dist))); 
+    const double weight = std::exp(((-4.0/(local_length_*local_length_)) * dist.dot(dist))); 
     const double weighted_volume = pother.volume() * weight;
     acc_damage_ += pother.damage_inc() * weighted_volume;
     acc_volume_ += weighted_volume;
