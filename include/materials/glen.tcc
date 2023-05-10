@@ -72,23 +72,17 @@ double mpm::Glen<tdim>::compute_glen_viscosity_strain(
     Eigen::Matrix<double, 6, 1> strain,
     double visc_factor,
     double visc_power) {
-    const double trace_strain = (strain(0) + strain(1) + strain(2)) / 3.0;
-    const Eigen::Array<double,6,1> second_invar_mult = (Eigen::Array<double, 6, 1>() << 0.5, 0.5, 0.5, 1, 1, 1).finished();
+    const double trace_strain = (strain(0) + strain(1)) / 2.0;
+    //const double trace_strain = (strain(0) + strain(1) + strain(2)) / 3.0;
+    const Eigen::Array<double,6,1> second_invar_mult = (Eigen::Array<double, 6, 1>() << 1, 1, 1, 0.5, 0.5, 0.5).finished();
     Eigen::Matrix<double, 6, 1> dev_strain = strain;
     for (int i = 0; i < 3; ++i) {
       dev_strain(i) -= trace_strain;
     }
     double effective_strain =
-        (dev_strain.dot((dev_strain.array() * second_invar_mult).matrix()));
+        0.5 * (dev_strain.dot((dev_strain.array() * second_invar_mult).matrix()));
     return 0.5 * visc_factor *
            std::pow(effective_strain + 1e-13, 0.5 * ((1.0 / visc_power) - 1.0));
-    //if (effective_stress > 0.0)
-    //{
-    //  return 1.0 / (2.0 * visc_factor *
-    //                std::pow(effective_stress, 0.5 * (visc_power - 1.0)));
-    //} else {
-    //  return -1.0;
-    //}
 }
 
 /*
