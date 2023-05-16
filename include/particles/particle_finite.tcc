@@ -1340,7 +1340,7 @@ void mpm::ParticleFinite<Tdim>::deserialize(
 
 //! Minus the internal force of the virtual stress field
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::minus_virtual_stress_field(
+void mpm::ParticleFinite<Tdim>::minus_virtual_stress_field(
     Eigen::Matrix<double, 6, 1>& traction, VectorDim& divergence_traction) {
   auto const tolerance = std::numeric_limits<double>::epsilon();
 
