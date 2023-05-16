@@ -339,6 +339,10 @@ class ParticleFinite : public ParticleBase<Tdim> {
   //! \param[in] phase_size The material phase size
   void initialise_material(unsigned phase_size = 1);
 
+  virtual void minus_virtual_stress_field( 
+      Eigen::Matrix<double, 6, 1>& traction,
+      VectorDim& divergence_traction) override;
+
  private:
   //! Compute strain rate
   //! \param[in] dn_dx The spatial gradient of shape function
