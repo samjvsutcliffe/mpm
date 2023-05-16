@@ -54,6 +54,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::stress_update_;
   //! Interface scheme
   using mpm::MPMBase<Tdim>::contact_;
+  //! Non-conforming boundary
+  using mpm::MPMBase<Tdim>::nonconforming_traction_;
 
 #ifdef USE_GRAPH_PARTITIONING
   //! Graph

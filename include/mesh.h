@@ -37,7 +37,7 @@ using Json = nlohmann::json;
 #include "material.h"
 #include "nodal_properties.h"
 #include "node.h"
-#include "nonconforming_pressure_constraint.h"
+#include "nonconforming_traction_constraint.h"
 #include "particle.h"
 #include "particle_base.h"
 #include "traction.h"
@@ -470,6 +470,23 @@ class Mesh {
 
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
+  //! Create non-conforming traction constraint
+  //! \param[in] bounding_box Bounding box [xmin, xmax, ymin, ymax, zmin, zmax]
+  //! \param[in] datum Datum for hydrostatic free surface
+  //! \param[in] fluid_density Fluid density for hydrostatic
+  //! \param[in] gravity Gravity for hydrostatic
+  //! \param[in] hydrostatic True if hydrostatic pressure, false for constant
+  //! \param[in] inside True if surface is inside bounding box
+  //! \param[in] mfunction Math function
+  //! \param[in] pressure Pressure if constant
+  bool create_nonconforming_traction_constraint(
+      const std::vector<double> bounding_box, const double datum,
+      const double fluid_density, const double gravity, const bool hydrostatic,
+      const bool inside, const std::shared_ptr<FunctionBase>& mfunction,
+      const double pressure);
+
+  //! Apply non-conforming traction constraint
+  void apply_nonconforming_traction_constraint(double current_time);
 
  private:
   // Read particles from file
@@ -480,23 +497,6 @@ class Mesh {
   // Locate a particle in mesh cells
   bool locate_particle_cells(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
-
-  //! Create non-conforming pressure constraint
-  //! \param[in] bounding_box Bounding box [xmin, xmax, ymin, ymax, zmin, zmax]
-  //! \param[in] inside True if surface is inside bounding box
-  //! \param[in] mfunction Math function
-  //! \param[in] pressure Pressure
-  //! \param[in] traction 1 or 0 for active or inactive directions
-  //! \param[in] traction_grad Gradient of traction values
-  bool create_nonconforming_pressure_constraint(
-      const std::vector<double> bounding_box, const bool inside,
-      const std::shared_ptr<FunctionBase>& mfunction, const double pressure,
-      const std::vector<double> traction,
-      const std::vector<double> traction_grad);
-
-  //! Apply non-conforming pressure constraint
-  void apply_nonconforming_pressure_constraint(double current_time);
-
  private:
   //! mesh id
   unsigned id_{std::numeric_limits<unsigned>::max()};
@@ -545,9 +545,6 @@ class Mesh {
   //! Particle velocity constraints
   std::vector<std::shared_ptr<mpm::VelocityConstraint>>
       particle_velocity_constraints_;
-  //! Non-conforming pressure constraints
-  std::vector<std::shared_ptr<mpm::NonconformingPressureConstraint>>
-      nonconforming_pressure_constraints_;
   //! Vector of generators for particle injections
   std::vector<mpm::Injection> particle_injections_;
   //! Nodal property pool
@@ -562,6 +559,12 @@ class Mesh {
  public:
   //! Cartesian damage mesh for delocalisation
   std::unique_ptr<mpm::DamageMesh<Tdim>> damage_mesh_;
+
+ protected:
+     
+  //! Non-conforming traction constraints
+  std::vector<std::shared_ptr<mpm::NonconformingTractionConstraint>>
+      nonconforming_traction_constraints_;
 
 };  // Mesh class
 }  // namespace mpm

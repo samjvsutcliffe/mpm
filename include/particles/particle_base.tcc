@@ -38,3 +38,4 @@ Eigen::Matrix<double,3,3> mpm::ParticleBase<Tdim>::vorticity_matrix(Eigen::Matri
       -voigt(3), voigt(1), voigt(4),
       -voigt(5), -voigt(4), voigt(2)).finished();
 };
+

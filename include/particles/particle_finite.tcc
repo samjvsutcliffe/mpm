@@ -625,9 +625,9 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<2>::compute_strain_rate(
     stretch_tensor_(1,0) += dn_dx(i, 0) * vel[1];
   }
 
-  if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
-  if (std::fabs(strain_rate[1]) < 1.E-15) strain_rate[1] = 0.;
-  if (std::fabs(strain_rate[3]) < 1.E-15) strain_rate[3] = 0.;
+  //if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
+  //if (std::fabs(strain_rate[1]) < 1.E-15) strain_rate[1] = 0.;
+  //if (std::fabs(strain_rate[3]) < 1.E-15) strain_rate[3] = 0.;
 
   //for(int x = 0;x < 2;++x){
   //    for(int y = 0;y < 2;++y){
@@ -769,6 +769,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
   for(int i = 0; i < Tdim;++i){
       natural_size_(i) = natural_size_(i) * dlength(i,i);
+      size_(i) = size_(i) * dlength(i,i);
   }
   dvolumetric_strain_ = df.determinant() - 1;
   //Volume ratio can be determined from det df

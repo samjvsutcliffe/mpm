@@ -71,6 +71,18 @@ class Cell {
   //! Return the number of particles
   unsigned nparticles() const { return particles_.size(); }
 
+  //! Return the whether cell is "empty" of particles, i.e. no domain touches it
+  bool particle_empty() const { 
+      //return particles_empty_; 
+      return nparticles() == 0;
+  }
+
+  //! Return the whether cell is "empty" of particles, i.e. no domain touches it
+  bool set_particle_full(){ 
+      //Interestingly this shouldn't require a mutex lock on most architecture
+      particles_empty_ = true; 
+  }
+
   //! Assign global nparticles
   //! \param[in] nparticles Number of global particles of cell
   void nglobal_particles(unsigned nparticles) {
@@ -256,6 +268,8 @@ class Cell {
   double mean_length_{std::numeric_limits<double>::max()};
   //! particles ids in cell
   std::vector<Index> particles_;
+  //! Whether cell is empty of particle
+  bool particles_empty_;
   //! Number of global nparticles
   unsigned nglobal_particles_{0};
   //! Container of node pointers (local id, node pointer)

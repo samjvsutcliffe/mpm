@@ -342,6 +342,16 @@ class Particle : public ParticleBase<Tdim> {
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) override;
 
+  
+  //! Minus the internal force of the virtual stress field
+  //! \param[in] traction Boundary traction
+  //! \param[in] divergence_traction Divergence of boundary traction
+  virtual void minus_virtual_stress_field( 
+      Eigen::Matrix<double, 6, 1>& traction,
+      VectorDim& divergence_traction) override;
+
+
+
  protected:
   //! Initialise particle material container
   //! \details This function allocate memory and initialise the material related

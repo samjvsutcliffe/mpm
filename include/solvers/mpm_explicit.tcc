@@ -156,7 +156,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
-
+    
+    if (nonconforming_traction_)
+      mesh_->apply_nonconforming_traction_constraint(step_ * dt_);
     // Particle kinematics
     if (damping_type_ == mpm::Damping::Cundall)
     {
