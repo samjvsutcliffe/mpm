@@ -39,6 +39,7 @@ void mpm::ParticleDamage<Tdim>::initialise() {
     damage_inc_ = 0;
     undamaged_stress_.setZero();
     this->scalar_properties_["damage"] = [&]() { return damage(); };
+    this->scalar_properties_["ybar"] = [&]() { return ybar(); };
     
     //try {
     //    local_length_ = (this->material())->template property<double>("local_length");
@@ -67,10 +68,11 @@ void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) n
     local_length_ = (this->material())->template property<double>("local_length");
     critical_stress_ = (this->material())->template property<double>("critical_stress");
     damage_rate_ = (this->material())->template property<double>("damage_rate");
-    //const double stress_crit = s1;
-    const double stress_crit = std::sqrt(0.5 * (std::pow(std::max(l[2],0.0) - std::max(l[1],0.0), 2) + 
-                                                std::pow(std::max(l[1],0.0) - std::max(l[0],0.0), 2) +
-                                                std::pow(std::max(l[0],0.0) - std::max(l[2],0.0), 2)));
+    const double stress_crit = s1 - reference_pressure;
+    //const double stress_crit = std::sqrt(0.5 * (std::pow(std::max(l[2],0.0) - std::max(l[1],0.0), 2) + 
+    //                                            std::pow(std::max(l[1],0.0) - std::max(l[0],0.0), 2) +
+    //                                            std::pow(std::max(l[0],0.0) - std::max(l[2],0.0), 2)));
+    damage_ybar_ = stress_crit;
     if (stress_crit > 0)
     {
       const double integrity = 1.0d - damage_;
@@ -124,10 +126,12 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
     Eigen::Matrix<double,3,1> l = es.eigenvalues();
     Eigen::Matrix<double,3,3> v = es.eigenvectors();
     for(int i = 0;i < 3;++i){
-        if(l[i] > 0.0){
-            l[i] *= (1.0 - damage_);
+      double esii = l[i] - reference_pressure;
+        if(esii > 0.0){
+            l[i] = (esii * (1.0 - damage_)) + reference_pressure;
         }
     }
+    reference_pressure = 0;
     this->stress_ = this->matrix_to_voigt(v * l.asDiagonal() * v.transpose());
   }
 }

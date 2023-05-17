@@ -1382,12 +1382,15 @@ void mpm::ParticleFinite<Tdim>::populate_cell_fill(const std::shared_ptr<Cell<Td
 			for (int y = -1; y <= 1; y+=2)
 			{
 				Eigen::Matrix<double, Tdim, 1> dx;
-                dx(0) = x * size_(0);
-                dx(1) = y * size_(1);
+                dx(0) = x * size_(0) * 0.5;
+                dx(1) = y * size_(1) * 0.5;
 			    if (cellptr->is_point_in_cell(coordinates_ + dx, &xi)) {
-			        cellptr->set_particle_full();
+			        //cellptr->set_particle_full();
 			    }
 			}
+		}
+		if (cellptr->is_point_in_cell(coordinates_, &xi)) {
+			cellptr->set_particle_full();
 		}
 	}
 	if constexpr (Tdim == 3) {

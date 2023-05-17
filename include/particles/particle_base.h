@@ -367,6 +367,10 @@ class ParticleBase {
         "in ParticleBase:: illegal operation!");
   }
 
+ public:
+     //TODO fix interface
+  double reference_pressure = 0;
+
  protected:
   //! particleBase id
   Index id_{std::numeric_limits<Index>::max()};

@@ -54,6 +54,9 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   //! Return damage at a particle
   double damage() const override { return damage_; }
 
+  //! Return damage at a particle
+  double ybar() const { return damage_ybar_; }
+
   //! Return damage increment at a particle
   double damage_inc() const override { return damage_inc_; }
 
@@ -87,6 +90,7 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   using ParticleBase<Tdim>::material_id_;
   //! State variables
   using ParticleBase<Tdim>::state_variables_;
+  using ParticleFinite<Tdim>::reference_pressure;
   using ParticleFinite<Tdim>::stress_;
   using ParticleFinite<Tdim>::dstrain_;
   using ParticleFinite<Tdim>::deformation_gradient_;
@@ -100,6 +104,8 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   double damage_inc_{0.}; 
   //! Local damage
   double damage_{0.}; 
+  //! YBar
+  double damage_ybar_{0.}; 
 
   double acc_damage_{0};
   double acc_volume_{0};

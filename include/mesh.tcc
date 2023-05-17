@@ -54,7 +54,7 @@ bool mpm::Mesh<Tdim>::create_nodes(mpm::Index gnid,
         max = max.cwiseMax(node_coordinates);
     }
     //We should be reading the damage resolution from the input file
-    const double damage_resolution = 10;
+    const double damage_resolution = 20;
     damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>(min,max, damage_resolution);
     //damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>();
 
@@ -2177,7 +2177,11 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     const double fluid_density = constraint->fluid_density();
     const double gravity = constraint->gravity();
 
-    for (auto cell : boundary_cell_list) {
+    //Do this iteration with multithreading
+	#pragma omp parallel for schedule(runtime)
+	for (auto citr = boundary_cell_list.cbegin(); citr != cells_.cend(); ++citr){
+            auto& cell = *citr;
+    //for (auto cell : boundary_cell_list) {
       // Set cell values
       const auto nodes = map_cells_[cell]->nodes();
       //const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
@@ -2208,7 +2212,8 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
       //   divergence_traction << 0., 0., 0.;
       // }
 
-      for (unsigned i = 0; i < nodes.size(); i++) {
+      //for (unsigned i = 0; i < nodes.size(); i++) {
+      for (unsigned i = 0; i < dn_dx_centroid.rows(); i++) {
         // Check nodal mass
         //if (nodes[i]->mass(mpm::ParticlePhase::Solid) < tolerance) continue;
 
@@ -2248,6 +2253,7 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
           const double pressure = fluid_density * gravity * depth;
           // Set traction
           for (unsigned i = 0; i < Tdim; i++) traction[i] = pressure;
+        map_particles_[particle]->reference_pressure = pressure;
         }
         // // Placeholder for arbitrary traction and divergence terms
         // else {

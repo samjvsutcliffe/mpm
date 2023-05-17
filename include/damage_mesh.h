@@ -84,7 +84,7 @@ class DamageMesh {
   //! mesh id
   //! Nodal property pool
   std::shared_ptr<mpm::NodalProperties> nodal_properties_{nullptr};
-  double resolution_{1};
+  double resolution_{50};
   VectorDim mesh_size;
   VectorDim offset;
   std::vector<DamageNode<Tdim>> nodes_;

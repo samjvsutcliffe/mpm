@@ -203,7 +203,7 @@ class ParticleFinite : public ParticleBase<Tdim> {
   //! Initial stress
   //! \param[in] stress Initial sress
   void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) override {
-    this->stress_ = stress;
+    this->stress_kirchoff_ = stress;
   }
 
   //! Compute stress
