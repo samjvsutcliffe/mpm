@@ -2128,7 +2128,7 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     const bool inside = constraint->inside();
 
     // Set of cells and nodes located at the vicinity of the interface
-    std::set<mpm::Index> boundary_cell_list;
+    std::unordered_set<mpm::Index> boundary_cell_list;
     std::set<mpm::Index> boundary_node_list;
 
     // Find cells and nodes located at the vicinity of the interface
@@ -2177,9 +2177,10 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     const double fluid_density = constraint->fluid_density();
     const double gravity = constraint->gravity();
 
+    std::vector<mpm::Index> bcl(boundary_cell_list.begin(), boundary_cell_list.end());
     //Do this iteration with multithreading
 	#pragma omp parallel for schedule(runtime)
-	for (auto citr = boundary_cell_list.cbegin(); citr != boundary_cell_list.cend(); ++citr){
+	for (auto citr = bcl.cbegin(); citr != bcl.cend(); ++citr){
 	  auto cell = *citr;
       //mpm::Index cell = *citr;
     //for (auto cell : boundary_cell_list) {

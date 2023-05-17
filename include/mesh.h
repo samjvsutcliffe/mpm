@@ -44,6 +44,7 @@ using Json = nlohmann::json;
 #include "vector.h"
 #include "velocity_constraint.h"
 #include "damage_mesh.h"
+#include <unordered_set>
 
 namespace mpm {
 
