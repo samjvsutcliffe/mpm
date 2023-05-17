@@ -126,7 +126,7 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
     Eigen::Matrix<double,3,1> l = es.eigenvalues();
     Eigen::Matrix<double,3,3> v = es.eigenvectors();
     for(int i = 0;i < 3;++i){
-      double esii = l[i] - reference_pressure;
+        double esii = l[i] - reference_pressure;
         if(esii > 0.0){
             l[i] = (esii * (1.0 - damage_)) + reference_pressure;
         }

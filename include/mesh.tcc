@@ -2178,10 +2178,11 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     const double gravity = constraint->gravity();
 
     //Do this iteration with multithreading
-	//#pragma omp parallel for schedule(runtime)
-	//for (auto citr = boundary_cell_list.cbegin(); citr != boundary_cell_list.cend(); ++citr){
-    //        auto& cell = *citr;
-    for (auto cell : boundary_cell_list) {
+	#pragma omp parallel for schedule(runtime)
+	for (auto citr = boundary_cell_list.cbegin(); citr != boundary_cell_list.cend(); ++citr){
+	  auto cell = *citr;
+      //mpm::Index cell = *citr;
+    //for (auto cell : boundary_cell_list) {
       // Set cell values
       const auto nodes = map_cells_[cell]->nodes();
       //const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
