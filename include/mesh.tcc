@@ -2210,7 +2210,7 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
 
       for (unsigned i = 0; i < nodes.size(); i++) {
         // Check nodal mass
-        if (nodes[i]->mass(mpm::ParticlePhase::Solid) < tolerance) continue;
+        //if (nodes[i]->mass(mpm::ParticlePhase::Solid) < tolerance) continue;
 
         // Compute force
         VectorDim force;

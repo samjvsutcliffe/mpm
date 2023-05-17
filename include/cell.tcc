@@ -59,7 +59,7 @@ bool mpm::Cell<Tdim>::initialise() {
       if constexpr (Tdim == 2)
       {
           mpm::QuadrilateralElement<Tdim, 4> cell_quad;
-          Eigen::Matrix<double, Tdim, 4> nodal_coordinates;
+          Eigen::Matrix<double, 4, Tdim> nodal_coordinates;
 	      //console_->info("Row {} Col {}\n",this->nodal_coordinates_.rows(),this->nodal_coordinates_.cols());
           for (int i = i; i < 4; ++i)
           {
@@ -67,13 +67,22 @@ bool mpm::Cell<Tdim>::initialise() {
           }
           //auto nodal_coordinates = cell_quad.unit_cell_coordinates();
 	      auto dndx = cell_quad.dn_dx(xi_centroid, nodal_coordinates, zero, zero);
-	      //console_->info("Row {} Col {}\n",dndx.rows(),dndx.cols());
+	      console_->info("Row {} Col {}\n",dndx.rows(),dndx.cols());
           for (int i = i; i < 4; ++i)
           {
             dn_dx_centroid_linear_.row(i) = dndx.row(i);
           }
-
       }
+      //console_->info("DNDX data\n");
+	  ////console_->info("Row {} Col {}\n",this->nodal_coordinates_.rows(),this->nodal_coordinates_.cols());
+      //for (int x = 0; x < Tdim; ++x)
+      //{
+      //  for (int y = 0; y < dn_dx_centroid_.rows(); ++y)
+	  //    {
+      //    console_->info("{} : {}\n", dn_dx_centroid_(y, x),
+      //                   dn_dx_centroid_linear_(y, x));
+	  //    } 
+      //}
       if constexpr (Tdim == 3)
       {
         //mpm::HexahedronElement<Tdim, 8> cell_hex =

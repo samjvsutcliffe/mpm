@@ -1351,10 +1351,10 @@ void mpm::ParticleFinite<Tdim>::minus_virtual_stress_field(
     if (mass_solid < tolerance) continue;
 
     VectorDim force;
-    if (Tdim == 2) {
+    if constexpr (Tdim == 2) {
       force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3];
       force[1] = dn_dx_(i, 0) * traction[3] + dn_dx_(i, 1) * traction[1];
-    } else if (Tdim == 3) {
+    } else if constexpr (Tdim == 3) {
       force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3] +
                  dn_dx_(i, 2) * traction[5];
       force[1] = dn_dx_(i, 0) * traction[3] + dn_dx_(i, 1) * traction[1] +
