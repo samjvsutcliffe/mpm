@@ -2179,7 +2179,7 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
 
     //Do this iteration with multithreading
 	#pragma omp parallel for schedule(runtime)
-	for (auto citr = boundary_cell_list.cbegin(); citr != cells_.cend(); ++citr){
+	for (auto citr = boundary_cell_list.cbegin(); citr != boundary_cell_list.cend(); ++citr){
             auto& cell = *citr;
     //for (auto cell : boundary_cell_list) {
       // Set cell values
