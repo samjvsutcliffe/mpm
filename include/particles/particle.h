@@ -90,6 +90,10 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] cellptr Pointer to a cell
   bool assign_cell(const std::shared_ptr<Cell<Tdim>>& cellptr) override;
 
+  virtual void populate_cell_fill(const std::shared_ptr<Cell<Tdim>>& cellptr) override { 
+      cellptr->set_particle_full();
+  };
+
   //! Assign a cell to particle
   //! If point is in new cell, assign new cell and remove particle id from old
   //! cell. If point can't be found in the new cell, check if particle is still

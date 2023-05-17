@@ -605,6 +605,8 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<1>::compute_strain_rate(
   return strain_rate;
 }
 
+
+
 // Compute strain rate of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::ParticleFinite<2>::compute_strain_rate(
@@ -1368,4 +1370,41 @@ void mpm::ParticleFinite<Tdim>::minus_virtual_stress_field(
     
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
+}
+
+template<unsigned Tdim>
+void mpm::ParticleFinite<Tdim>::populate_cell_fill(const std::shared_ptr<Cell<Tdim>>& cellptr) {
+	Eigen::Matrix<double, Tdim, 1> xi;
+	//TODO
+	if constexpr (Tdim == 2) {
+		for (int x = -1; x <= 1; x+=2)
+		{
+			for (int y = -1; y <= 1; y+=2)
+			{
+				Eigen::Matrix<double, Tdim, 1> dx;
+                dx(0) = x * size_(0);
+                dx(1) = y * size_(1);
+			    if (cellptr->is_point_in_cell(coordinates_ + dx, &xi)) {
+			        cellptr->set_particle_full();
+			    }
+			}
+		}
+	}
+	if constexpr (Tdim == 3) {
+		for (int x = -1; x <= 1; x+=2)
+		{
+			for (int y = -1; y <= 1; y+=2)
+			{
+                for (int z = -1; z <= 1; z += 2) {
+					Eigen::Matrix<double, Tdim, 1> dx;
+					dx(0) = x * size_(0);
+					dx(1) = y * size_(1);
+					dx(2) = z * size_(2);
+					if (cellptr->is_point_in_cell(coordinates_ + dx, &xi)) {
+					    cellptr->set_particle_full();
+					}
+                }
+			}
+		}
+	}
 }

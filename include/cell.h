@@ -19,6 +19,8 @@
 #include "node_base.h"
 #include "node_base.h"
 #include "quadrature.h"
+#include "quadrilateral_element.h"
+#include "hexahedron_element.h"
 
 namespace mpm {
 
@@ -73,14 +75,22 @@ class Cell {
 
   //! Return the whether cell is "empty" of particles, i.e. no domain touches it
   bool particle_empty() const { 
-      //return particles_empty_; 
-      return nparticles() == 0;
+      return particles_empty_; 
+      //return nparticles() == 0;
   }
 
   //! Return the whether cell is "empty" of particles, i.e. no domain touches it
-  bool set_particle_full(){ 
+  void set_particle_full(){ 
       //Interestingly this shouldn't require a mutex lock on most architecture
+	  std::lock_guard<std::mutex> guard(cell_mutex_);
       particles_empty_ = true; 
+  }
+
+  //! Return the whether cell is "empty" of particles, i.e. no domain touches it
+  void reset_particle_full(){ 
+      //Interestingly this shouldn't require a mutex lock on most architecture
+	  std::lock_guard<std::mutex> guard(cell_mutex_);
+      particles_empty_ = false; 
   }
 
   //! Assign global nparticles
@@ -185,6 +195,9 @@ class Cell {
   //! Return the dN/dx at the centroid of the cell
   Eigen::MatrixXd dn_dx_centroid() const { return dn_dx_centroid_; }
 
+  //! Return the dN/dx at the centroid of the cell
+  Eigen::MatrixXd dn_dx_centroid_linear() const { return dn_dx_centroid_linear_; }
+
   //! Compute mean length of cell
   void compute_mean_length();
 
@@ -269,7 +282,7 @@ class Cell {
   //! particles ids in cell
   std::vector<Index> particles_;
   //! Whether cell is empty of particle
-  bool particles_empty_;
+  bool particles_empty_ = false;
   //! Number of global nparticles
   unsigned nglobal_particles_{0};
   //! Container of node pointers (local id, node pointer)
@@ -286,6 +299,8 @@ class Cell {
   std::shared_ptr<Quadrature<Tdim>> quadrature_{nullptr};
   //! dN/dx
   Eigen::MatrixXd dn_dx_centroid_;
+  //! dN/dx linear only
+  Eigen::MatrixXd dn_dx_centroid_linear_;
   //! Velocity constraints
   //! key: face_id, value: pair of direction [0/1/2] and velocity value
   std::map<unsigned, std::vector<std::pair<unsigned, double>>>

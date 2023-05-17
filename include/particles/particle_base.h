@@ -114,6 +114,9 @@ class ParticleBase {
   //! Assign cell id
   virtual bool assign_cell_id(Index id) = 0;
 
+  //! Assign cell
+  virtual void populate_cell_fill(const std::shared_ptr<Cell<Tdim>>& cellptr){};
+
   //! Return cell id
   virtual Index cell_id() const = 0;
 

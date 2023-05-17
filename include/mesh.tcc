@@ -1150,20 +1150,9 @@ bool mpm::Mesh<Tdim>::locate_particle_cells(
     Eigen::Matrix<double, Tdim, 1> xi;
     Eigen::Matrix<double, Tdim, 1> coordinates = particle->coordinates();
     //TODO
-    //Eigen::Matrix<double, Tdim, 1> size = particle->size();
-    for (auto neighbour : neighbours) {
-        //All combinations
-      //if (map_cells_[neighbour]->is_point_in_cell(coordinates + length, &xi)) {
-      //  map_cells_[neighbour]->set_particle_full();
-      //}
-      //if (map_cells_[neighbour]->is_point_in_cell(coordinates - length, &xi)) {
-      //  map_cells_[neighbour]->set_particle_full();
-      //}
-    }
     for (auto neighbour : neighbours) {
       if (map_cells_[neighbour]->is_point_in_cell(coordinates, &xi)) {
         particle->assign_cell_xi(map_cells_[neighbour], xi);
-        //map_cells_[neighbour]->set_particle_full();
         return true;
       }
     }
@@ -2124,6 +2113,9 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     double current_time) {
 
+  iterate_over_cells(std::bind(&mpm::Cell<Tdim>::reset_particle_full, std::placeholders::_1));
+  iterate_over_particles(std::bind(&mpm::Mesh<Tdim>::update_cell_fill,this,std::placeholders::_1));
+
   // Iterate over all non-conforming traction constraints
   for (const auto& constraint : nonconforming_traction_constraints_) {
     // Set tolerance
@@ -2142,7 +2134,7 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     // Find cells and nodes located at the vicinity of the interface
     for (auto citr = cells_.cbegin(); citr != cells_.cend(); citr++) {
       // Loop over void cells
-      if (!(*citr)->particle_empty()) continue;
+      if (!((*citr)->particle_empty())) continue;
 
       // Check if cell is inside or outside bounding box
       auto const cell_center = (*citr)->centroid();
@@ -2188,7 +2180,8 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     for (auto cell : boundary_cell_list) {
       // Set cell values
       const auto nodes = map_cells_[cell]->nodes();
-      const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
+      //const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
+      const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid_linear();
       const double cvolume = map_cells_[cell]->volume();
 
       if (hydrostatic) {
@@ -2221,12 +2214,12 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
 
         // Compute force
         VectorDim force;
-        if (Tdim == 2) {
+        if constexpr (Tdim == 2) {
           force[0] = dn_dx_centroid(i, 0) * traction[0] +
                      dn_dx_centroid(i, 1) * traction[3];
           force[1] = dn_dx_centroid(i, 0) * traction[3] +
                      dn_dx_centroid(i, 1) * traction[1];
-        } else if (Tdim == 3) {
+        } else if constexpr (Tdim == 3) {
           force[0] = dn_dx_centroid(i, 0) * traction[0] +
                      dn_dx_centroid(i, 1) * traction[3] +
                      dn_dx_centroid(i, 2) * traction[5];
@@ -2267,4 +2260,27 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
       }
     }
   }
+  //iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::populate_cell_fill, std::placeholders::_1));
 }
+
+//! Locate particles in a cell
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::update_cell_fill(
+    const std::shared_ptr<mpm::ParticleBase<Tdim>> particle) {
+  // Check the current cell if it is not invalid
+  if (particle->cell_id() != std::numeric_limits<mpm::Index>::max() && particle->cell_ptr()) {
+    // Check if material point is in any of its nearest neighbours
+    const auto neighbours = map_cells_[particle->cell_id()]->neighbours();
+    Eigen::Matrix<double, Tdim, 1> xi;
+    Eigen::Matrix<double, Tdim, 1> coordinates = particle->coordinates();
+    particle->populate_cell_fill(map_cells_[particle->cell_id()]);
+    //map_cells_[particle->cell_id()]->set_particle_full();
+    for (auto neighbour : neighbours) {
+        //if (neighbours != std::numeric_limits<mpm::Index>::max())
+        //{
+		particle->populate_cell_fill(map_cells_[neighbour]);
+        //}
+    }
+  }
+}
+

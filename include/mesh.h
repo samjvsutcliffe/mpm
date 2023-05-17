@@ -249,6 +249,12 @@ class Mesh {
   //! \retval particles Particles which cannot be located in the mesh
   std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> locate_particles_mesh();
 
+  //! Fill out 
+  //! Iterate over all cells in a mesh to find the cell in which particles
+  //! are located.
+  //! \retval particles Particles which cannot be located in the mesh
+  void update_cell_fill(const std::shared_ptr<mpm::ParticleBase<Tdim>> particle);
+
   //! Find damaged particles
   //! \retval particles Particles which should be removed
   std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> locate_damaged_particles();

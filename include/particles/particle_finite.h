@@ -102,6 +102,8 @@ class ParticleFinite : public ParticleBase<Tdim> {
   //! \param[in] id Cell id
   bool assign_cell_id(Index id) override;
 
+  virtual void populate_cell_fill(const std::shared_ptr<Cell<Tdim>>& cellptr) override;
+
   //! Return cell id
   Index cell_id() const override { return cell_id_; }
 

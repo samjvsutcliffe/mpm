@@ -50,8 +50,36 @@ bool mpm::Cell<Tdim>::initialise() {
       zero.setZero();
 
       // dN/dX at the centroid
-      dn_dx_centroid_ =
-          element_->dn_dx(xi_centroid, this->nodal_coordinates_, zero, zero);
+
+      dn_dx_centroid_ = element_->dn_dx(xi_centroid, this->nodal_coordinates_, zero, zero);
+      dn_dx_centroid_linear_ = dn_dx_centroid_;
+      dn_dx_centroid_linear_.setZero();
+
+      //For nonconforming neumann, we always want to use first order quadrature for the element
+      if constexpr (Tdim == 2)
+      {
+          mpm::QuadrilateralElement<Tdim, 4> cell_quad;
+          Eigen::Matrix<double, Tdim, 4> nodal_coordinates;
+	      //console_->info("Row {} Col {}\n",this->nodal_coordinates_.rows(),this->nodal_coordinates_.cols());
+          for (int i = i; i < 4; ++i)
+          {
+            nodal_coordinates.row(i) = this->nodal_coordinates_.row(i);
+          }
+          //auto nodal_coordinates = cell_quad.unit_cell_coordinates();
+	      auto dndx = cell_quad.dn_dx(xi_centroid, nodal_coordinates, zero, zero);
+	      //console_->info("Row {} Col {}\n",dndx.rows(),dndx.cols());
+          for (int i = i; i < 4; ++i)
+          {
+            dn_dx_centroid_linear_.row(i) = dndx.row(i);
+          }
+
+      }
+      if constexpr (Tdim == 3)
+      {
+        //mpm::HexahedronElement<Tdim, 8> cell_hex =
+        //    mpm::HexahedronElement<Tdim, 8>();
+	    //  dn_dx_centroid_linear_ = cell_hex.dn_dx(xi_centroid, this->nodal_coordinates_, zero, zero);
+      }
 
       status = true;
     } else {
