@@ -2177,13 +2177,13 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     const double fluid_density = constraint->fluid_density();
     const double gravity = constraint->gravity();
 
-    std::vector<mpm::Index> bcl(boundary_cell_list.begin(), boundary_cell_list.end());
-    //Do this iteration with multithreading
-	#pragma omp parallel for schedule(runtime)
-	for (auto citr = bcl.cbegin(); citr != bcl.cend(); ++citr){
-	  auto cell = *citr;
+    //std::vector<mpm::Index> bcl(boundary_cell_list.begin(), boundary_cell_list.end());
+    ////Do this iteration with multithreading
+	//#pragma omp parallel for schedule(runtime)
+	//for (auto citr = bcl.cbegin(); citr != bcl.cend(); ++citr){
+	//  auto cell = *citr;
       //mpm::Index cell = *citr;
-    //for (auto cell : boundary_cell_list) {
+    for (auto cell : boundary_cell_list) {
       // Set cell values
       const auto nodes = map_cells_[cell]->nodes();
       //const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
