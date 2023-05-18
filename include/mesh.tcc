@@ -2115,6 +2115,10 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
 
   iterate_over_cells(std::bind(&mpm::Cell<Tdim>::reset_particle_full, std::placeholders::_1));
   iterate_over_particles(std::bind(&mpm::Mesh<Tdim>::update_cell_fill,this,std::placeholders::_1));
+  iterate_over_particles(
+      [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> p) {
+  		p->reference_pressure = 0;
+      });
 
   // Iterate over all non-conforming traction constraints
   for (const auto& constraint : nonconforming_traction_constraints_) {
@@ -2268,6 +2272,19 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
       }
     }
   }
+  //iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::populate_cell_fill, std::placeholders::_1));
+  //if (hydrostatic) {
+  //  mesh_->iterate_over_particles(
+  //      [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> p) {
+  //          const double depth = (datum - p->coordinates()(Tdim - 1, 0));
+  //          if (!(depth a 0)) {
+  //  			// Compute current pressure
+  //          }
+  //          depth = std::max(0, depth);
+  //  		const double pressure = fluid_density * gravity * depth;
+  //  		map_particles_[particle]->reference_pressure = pressure;
+  //      });
+  //}
   //iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::populate_cell_fill, std::placeholders::_1));
 }
 

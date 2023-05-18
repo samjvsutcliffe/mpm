@@ -810,7 +810,6 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objective_stress_increment(
         {
           omega += (((1 + (lambda_a / lambda_b)) /
                     (1 - (lambda_a / lambda_b))) + ((2/(std::log(lambda_a) - std::log(lambda_b)))))
-              //((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
               * v.col(i) * v.col(i).transpose()
               * stretch_tensor_
               * v.col(j) * v.col(j).transpose();
