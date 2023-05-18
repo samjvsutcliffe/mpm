@@ -2,7 +2,7 @@
 
 template <>
 inline int mpm::DamageMesh<1>::GetNodeRawIndex(Eigen::Matrix<int, 1, 1> index) {
-    return index[1];
+    return index[0];
 };
 template <>
 inline int mpm::DamageMesh<2>::GetNodeRawIndex(Eigen::Matrix<int, 2, 1> index) {
@@ -18,6 +18,8 @@ template <typename Toper>
 inline void mpm::DamageMesh<Tdim>::iterate_over_neighbours(Toper oper,mpm::ParticleBase<Tdim> & p,double distance){
     const int nodal_size = std::ceil((2*distance)/resolution_);
     IndexDim index = PositionToIndex(p.coordinates());
+    
+    //console_->info("Iterating over neighbours");
     //In this case we are forced to do if constepxr or something much harder
     //We are not allowed to partially specialise template arguments, i.e. <Tdim=1,Toper=Any>
     //If constexpr still allows us to not check at runtime, but allows for this specialisation
@@ -33,6 +35,7 @@ inline void mpm::DamageMesh<Tdim>::iterate_over_neighbours(Toper oper,mpm::Parti
             for(int y = -nodal_size;y<=nodal_size;++y) {
               IndexDim di = (Eigen::Matrix<int, Tdim, 1>() << x, y).finished();
               if (InBounds(index + di)) {
+				//console_->info("Found nodes");
                 auto & node = GetNode(index + di);
                 node.iterate_over_particles(std::bind(oper,&p,std::placeholders::_1));
               }

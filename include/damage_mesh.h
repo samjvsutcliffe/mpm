@@ -57,7 +57,7 @@ struct DamageNode {
  }
   template <typename Toper>
   inline void iterate_over_particles(Toper oper){
-      for(auto p : local_list){
+      for(mpm::ParticleBase<Tdim>* p : local_list){
           oper(*p);
       }
 	  //oper();
@@ -88,14 +88,14 @@ class DamageMesh {
   VectorDim mesh_size;
   VectorDim offset;
   std::vector<DamageNode<Tdim>> nodes_;
-  //! Logger
-  std::unique_ptr<spdlog::logger> console_;
   //! Maximum number of halo nodes
   unsigned nhalo_nodes_{0};
   //! Maximum number of halo nodes
   unsigned ncomms_{0};
 
  public:
+  //! Logger
+  std::unique_ptr<spdlog::logger> console_;
   // Construct a mesh with a global unique id
   //! \param[in] id Global mesh id
   //! \param[in] isoparametric DamageMesh is isoparametric

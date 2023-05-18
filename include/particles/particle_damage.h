@@ -52,13 +52,16 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   void compute_stress(float dt) noexcept override;
 
   //! Return damage at a particle
-  double damage() const override { return damage_; }
+  virtual double damage() const override { return damage_; }
 
   //! Return damage at a particle
   double ybar() const { return damage_ybar_; }
 
   //! Return damage increment at a particle
-  double damage_inc() const override { return damage_inc_; }
+  virtual double damage_inc() const override { return damage_inc_; }
+
+  //! Return damage increment at a particle
+  virtual double damage_inc_local() const override { return damage_inc_local_; }
 
   //! Initialise properties
   void initialise() override;
@@ -115,6 +118,10 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   double damage_rate_{0};
   //! Stresses
   Eigen::Matrix<double, 6, 1> undamaged_stress_;
+
+ public:
+  //! Damage increment
+  virtual double damage_local_length() const override { return local_length_; };
 
 };  // Particle class
 }  // namespace mpm

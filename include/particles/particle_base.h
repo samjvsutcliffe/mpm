@@ -246,6 +246,12 @@ class ParticleBase {
   //! Damage increment
   virtual double damage_inc() const { return 0; };
 
+  //! Damage increment local
+  virtual double damage_inc_local() const { return 0; };
+
+  //! Damage increment
+  virtual double damage_local_length() const { return 1; };
+
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;
 

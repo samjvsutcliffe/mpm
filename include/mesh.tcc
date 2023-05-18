@@ -56,6 +56,7 @@ bool mpm::Mesh<Tdim>::create_nodes(mpm::Index gnid,
     //We should be reading the damage resolution from the input file
     const double damage_resolution = 20;
     damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>(min,max, damage_resolution);
+    //damage_mesh_->console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
     //damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>();
 
   } catch (std::exception& exception) {
@@ -249,7 +250,7 @@ bool mpm::Mesh<Tdim>::create_cells(
         }
         ++local_nid;
       }
-      element->InitialiseLocalMapping(cell->nodes_local_ids());
+      //element->InitialiseLocalMapping(cell->nodes_local_ids());
       //Init 
 
       // Add cell to mesh
@@ -2270,6 +2271,15 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
         map_particles_[particle]->minus_virtual_stress_field(
             traction, divergence_traction);
       }
+
+	  if (hydrostatic) {
+	    iterate_over_particles(
+	        [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> p) {
+	            const double depth = std::max(0.0, (datum - p->coordinates()(Tdim - 1, 0)));
+	    		const double pressure = fluid_density * gravity * depth;
+	    		p->reference_pressure = pressure;
+	        });
+	  }
     }
   }
   //iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::populate_cell_fill, std::placeholders::_1));

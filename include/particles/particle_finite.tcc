@@ -431,6 +431,7 @@ bool mpm::ParticleFinite<Tdim>::compute_reference_location() noexcept {
   // Check if the point is in cell
   if (cell_ != nullptr && cell_->is_point_in_cell(this->coordinates_, &xi)) {
     this->xi_ = xi;
+    //console_->info("XI: {},{}\n", xi(0), xi(1));
     status = true;
   }
 
@@ -795,7 +796,6 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objective_stress_increment(
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(b);
   if (eigensolver.info() != Eigen::Success)
   {
-    //console_->error("No eigenvectors in logspin left cauchy green strain matrix?\n");
     abort();
   }
   auto l = eigensolver.eigenvalues();
@@ -804,9 +804,9 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objective_stress_increment(
   for(int i = 0;i < 3;++i){
     for(int j = 0;j < 3;++j){
       if(i != j){
-        auto lambda_a = l(i,i);
-        auto lambda_b = l(j,j);
-        if(std::abs(l(i,i)-l(j,j)) > 1e-6)
+        double lambda_a = l(i);
+        double lambda_b = l(j);
+        if(std::abs(lambda_a - lambda_b) > 1e-6)
         {
           omega += (((1 + (lambda_a / lambda_b)) /
                     (1 - (lambda_a / lambda_b))) + ((2/(std::log(lambda_a) - std::log(lambda_b)))))
@@ -817,8 +817,8 @@ Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objective_stress_increment(
       }
     }
   }
-  auto stress_matrix = this->voigt_to_matrix(stress);
-  return this->matrix_to_voigt(this->voigt_to_matrix(stress_inc) - ((stress_matrix * omega) - (omega * stress_matrix)));
+  Eigen::Matrix<double,3,3> stress_matrix = this->voigt_to_matrix(stress);
+  return stress_inc - this->matrix_to_voigt((stress_matrix * omega) - (omega * stress_matrix));
 }
 
 template <unsigned Tdim>

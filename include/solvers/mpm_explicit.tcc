@@ -35,6 +35,9 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
     mpm_scheme_->damage_enable_ = damage_enable_;
     mpm_scheme_->damage_removal_ = damage_removal_;
     mpm_scheme_->damage_nonlocal_ = damage_nonlocal_;
+    console_->info("Damage enabled: {}", damage_enable_);
+    console_->info("Damage removal: {}", damage_removal_);
+    console_->info("Damage nonlocal: {}", damage_nonlocal_);
 }
 
 //! MPM Explicit compute stress strain

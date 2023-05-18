@@ -102,14 +102,14 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
       mesh_->iterate_over_particles(
           std::bind(&mpm::DamageMesh<Tdim>::AddParticle,
                     mesh_->damage_mesh_.get(), std::placeholders::_1));
-      const double delocal_distance = 50;
+      //const double delocal_distance = 50;
       // delocalise our particles using the whole mesh
       mesh_->iterate_over_particles(
           [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> p) {
             mesh_->damage_mesh_->iterate_over_neighbours(
                 std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage,
                           std::placeholders::_1, std::placeholders::_2),
-                *p.get(), delocal_distance);
+                *p.get(), p->damage_local_length());
           });
 
       // Fix up our delocalised accumulations

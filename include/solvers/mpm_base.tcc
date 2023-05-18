@@ -28,6 +28,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
       {"damage", VariableType::Scalar},
+      {"damage_inc", VariableType::Scalar},
       {"ybar", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector},
