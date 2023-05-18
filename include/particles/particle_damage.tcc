@@ -68,6 +68,7 @@ void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) n
     local_length_ = (this->material())->template property<double>("local_length");
     critical_stress_ = (this->material())->template property<double>("critical_stress");
     damage_rate_ = (this->material())->template property<double>("damage_rate");
+    critical_damage_ = (this->material())->template property<double>("critical_damage");
     const double stress_crit = s1 - reference_pressure;
     //const double stress_crit = std::sqrt(0.5 * (std::pow(std::max(l[2],0.0) - std::max(l[1],0.0), 2) + 
     //                                            std::pow(std::max(l[1],0.0) - std::max(l[0],0.0), 2) +
@@ -120,6 +121,10 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
   damage_inc_ = std::pow(std::max(0.0,damage_inc_ - critical_stress_),3.0) * damage_rate_;
   damage_ += damage_inc_ * dt;
   damage_ = std::min(std::max(damage_, 0.0), 1.0);
+  if (damage_ > critical_damage_) {
+    damage_ = 1;
+    damage_inc_ = 0;
+  }
   if (damage_ > 0.) {
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
     es.compute(this->voigt_to_matrix(stress));

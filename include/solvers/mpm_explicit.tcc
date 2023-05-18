@@ -15,6 +15,26 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
     contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
   else
     contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
+
+  auto analysis_ = io_->analysis();
+  try {
+    if (analysis_.find("damage_enable") != analysis_.end()) {
+		damage_enable_ = analysis_["damage_enable"].template get<bool>();
+    }
+    if (analysis_.find("damage_removal") != analysis_.end()) {
+		damage_removal_ = analysis_["damage_removal"].template get<bool>();
+    }
+    if (analysis_.find("damage_nonlocal") != analysis_.end()) {
+		damage_nonlocal_ = analysis_["damage_nonlocal"].template get<bool>();
+    }
+  } catch (std::domain_error& domain_error) {
+    console_->error("{} {} Get analysis object: {}", __FILE__, __LINE__,
+                    domain_error.what());
+    abort();
+  }
+    mpm_scheme_->damage_enable_ = damage_enable_;
+    mpm_scheme_->damage_removal_ = damage_removal_;
+    mpm_scheme_->damage_nonlocal_ = damage_nonlocal_;
 }
 
 //! MPM Explicit compute stress strain
@@ -176,7 +196,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
-    mpm_scheme_->remove_damaged_particles();
+    if (damage_removal_) {
+        mpm_scheme_->remove_damaged_particles();
+    }
 
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING

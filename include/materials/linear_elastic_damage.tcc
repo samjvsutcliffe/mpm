@@ -7,6 +7,7 @@ mpm::LinearElasticDamage<Tdim>::LinearElasticDamage(unsigned id,
     critical_stress_ = material_properties.at("critical_stress").template get<double>();
     damage_rate_ = material_properties.at("damage_rate").template get<double>();
     local_length_ = material_properties.at("local_length").template get<double>();
+    critical_damage_ = material_properties.at("critical_damage").template get<double>();
   } catch (Json::exception& except) {
     console_->error("Material parameter not set: {} {}\n", except.what(),
                     except.id);

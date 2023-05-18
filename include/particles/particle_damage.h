@@ -111,6 +111,7 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   double acc_volume_{0};
   double local_length_{50};
   double critical_stress_{0};
+  double critical_damage_{1.0};
   double damage_rate_{0};
   //! Stresses
   Eigen::Matrix<double, 6, 1> undamaged_stress_;

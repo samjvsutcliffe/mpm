@@ -89,6 +89,14 @@ class MPMScheme {
   int mpi_size_ = 1;
   //! MPI rank
   int mpi_rank_ = 0;
+
+ public:
+  //! Whether to run damage
+  bool damage_enable_ { false };
+  //! Whether to enable damaged particle removal
+  bool damage_removal_{true};
+  //! Whether to enable damaged nonlocal damage
+  bool damage_nonlocal_{false};
 };  // MPMScheme class
 }  // namespace mpm
 

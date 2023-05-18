@@ -82,6 +82,12 @@ class MPMExplicit : public MPMBase<Tdim> {
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
+  //! Whether to run damage
+  bool damage_enable_ { false };
+  //! Whether to enable damaged particle removal
+  bool damage_removal_{false};
+  //! Whether to enable damaged nonlocal damage
+  bool damage_nonlocal_{false};
   //! Interface
   bool interface_{false};
   

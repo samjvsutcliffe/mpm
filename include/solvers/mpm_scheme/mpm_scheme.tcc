@@ -89,37 +89,37 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1, dt_));
   
-  const bool local_damage = false;
-  // Update damage
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_damage_increment, std::placeholders::_1, dt_, local_damage));
+  if (damage_enable_) {
+    // const bool local_damage = false;
+    //  Update damage
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::compute_damage_increment,
+                  std::placeholders::_1, dt_, !damage_nonlocal_));
 
-  if(!local_damage)
-  {
-	  mesh_->damage_mesh_->reset();
-	  //mesh_->damage_mesh_->PopulateMesh(mesh_->particles());
-	  mesh_->iterate_over_particles(
-	      std::bind(&mpm::DamageMesh<Tdim>::AddParticle,
-                        mesh_->damage_mesh_.get(), std::placeholders::_1));
-	  const double delocal_distance = 50;
-      //delocalise our particles using the whole mesh
-	  mesh_->iterate_over_particles(
-		  [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> p) {
-			mesh_->damage_mesh_->iterate_over_neighbours(
-                    std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage,std::placeholders::_1,std::placeholders::_2),
-                    *p.get(),
-				    delocal_distance);
-		  }
-	  );
-      
-      //Fix up our delocalised accumulations
+    if (damage_nonlocal_) {
+      mesh_->damage_mesh_->reset();
+      // mesh_->damage_mesh_->PopulateMesh(mesh_->particles());
       mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage_post,
-        std::placeholders::_1));
-  }
+          std::bind(&mpm::DamageMesh<Tdim>::AddParticle,
+                    mesh_->damage_mesh_.get(), std::placeholders::_1));
+      const double delocal_distance = 50;
+      // delocalise our particles using the whole mesh
+      mesh_->iterate_over_particles(
+          [&](const std::shared_ptr<mpm::ParticleBase<Tdim>> p) {
+            mesh_->damage_mesh_->iterate_over_neighbours(
+                std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage,
+                          std::placeholders::_1, std::placeholders::_2),
+                *p.get(), delocal_distance);
+          });
 
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::apply_damage, std::placeholders::_1, dt_));
+      // Fix up our delocalised accumulations
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::delocalise_damage_post,
+                    std::placeholders::_1));
+    }
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::apply_damage, std::placeholders::_1, dt_));
+  }
 }
 
 //! Pressure smoothing
