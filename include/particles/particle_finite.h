@@ -166,6 +166,9 @@ class ParticleFinite : public ParticleBase<Tdim> {
                        unsigned phase = mpm::ParticlePhase::Solid) override;
 
 
+  virtual Eigen::Matrix<double, 6, 1> objective_stress_increment(
+      Eigen::Matrix<double, 6, 1> stress_inc,
+      Eigen::Matrix<double, 6, 1> stress) override;
 
   //! Apply logarithmic spin stress rate adjustment
   //! \param[in] voigt notation stress

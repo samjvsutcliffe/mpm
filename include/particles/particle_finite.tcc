@@ -787,6 +787,40 @@ void mpm::ParticleFinite<Tdim>::compute_vorticity(double dt) noexcept {
   // Update dstrain
   vorticity_ = vorticity_rate * dt;
 }
+template <unsigned Tdim>
+Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objective_stress_increment(Eigen::Matrix<double,6,1> stress_inc,Eigen::Matrix<double,6,1> stress)
+{
+  const Eigen::Matrix<double,3,3> w = this->vorticity_matrix(vorticity_);
+  const auto b = deformation_gradient_ * deformation_gradient_.transpose();
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(b);
+  if (eigensolver.info() != Eigen::Success)
+  {
+    //console_->error("No eigenvectors in logspin left cauchy green strain matrix?\n");
+    abort();
+  }
+  auto l = eigensolver.eigenvalues();
+  auto v = eigensolver.eigenvectors();
+  Eigen::Matrix<double,3,3> omega = w;
+  for(int i = 0;i < 3;++i){
+    for(int j = 0;j < 3;++j){
+      if(i != j){
+        auto lambda_a = l(i,i);
+        auto lambda_b = l(j,j);
+        if(std::abs(l(i,i)-l(j,j)) > 1e-6)
+        {
+          omega += (((1 + (lambda_a / lambda_b)) /
+                    (1 - (lambda_a / lambda_b))) + ((2/(std::log(lambda_a) - std::log(lambda_b)))))
+              //((lambda_a + lambda_b) / (lambda_a - lambda_b) + (2/(std::log(lambda_a) - std::log(lambda_b))))
+              * v.col(i) * v.col(i).transpose()
+              * stretch_tensor_
+              * v.col(j) * v.col(j).transpose();
+        }
+      }
+    }
+  }
+  auto stress_matrix = this->voigt_to_matrix(stress);
+  return this->matrix_to_voigt(this->voigt_to_matrix(stress_inc) - ((stress_matrix * omega) - (omega * stress_matrix)));
+}
 
 template <unsigned Tdim>
 Eigen::Matrix<double,6,1> mpm::ParticleFinite<Tdim>::objectify_stress_logspin(Eigen::Matrix<double,6,1> stress_inc,Eigen::Matrix<double,6,1> stress)

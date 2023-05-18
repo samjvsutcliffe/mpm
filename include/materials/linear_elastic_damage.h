@@ -53,6 +53,7 @@ class LinearElasticDamage : public LinearElastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
+  using LinearElastic<Tdim>::de_;
   double critical_stress_{0};
   double damage_rate_{0};
   double local_length_{0};
