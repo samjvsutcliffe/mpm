@@ -258,6 +258,7 @@ void mpm::ParticleFinite<Tdim>::initialise() {
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
   this->vector_properties_["displacements"] = [&]() { return displacement(); };
   this->vector_properties_["velocities"] = [&]() { return velocity(); };
+  this->vector_properties_["lengths"] = [&]() { return natural_size_;};
   this->tensor_properties_["stresses"] = [&]() { return stress(); };
   this->tensor_properties_["strains"] = [&]() { return strain(); };
 }
@@ -478,9 +479,12 @@ bool mpm::ParticleFinite<Tdim>::assign_volume(double volume) {
 
       // Set local particle length based on length of element in natural
       // coordinates. Length/(npartices^(1/Dimension))
+      //this->natural_size_.fill(
+      //    element->unit_element_length() /
+      //    std::pow(cell_->nparticles(), static_cast<double>(1. / Tdim)));
       this->natural_size_.fill(
-          element->unit_element_length() /
-          std::pow(cell_->nparticles(), static_cast<double>(1. / Tdim)));
+          element->unit_element_length() *
+          std::pow(volume_ / cell_->volume(), static_cast<double>(1. / Tdim)));
       this->natural_size_0_ = natural_size_;
     }
   } catch (std::exception& exception) {

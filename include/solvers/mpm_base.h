@@ -212,6 +212,8 @@ class MPMBase : public MPM {
   mpm::Damping damping_type_{mpm::Damping::None};
   //! Damping factor
   double damping_factor_{0.};
+  //! Mass scaling factor
+  double mass_scaling_factor_{1.};
   //! Locate particles
   bool locate_particles_{true};
   //! Non-conforming traction boundary flag
