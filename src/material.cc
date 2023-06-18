@@ -9,6 +9,7 @@
 #include "maxwell.h"
 #include "norton_hoff.h"
 #include "glen.h"
+#include "glen_damage.h"
 
 // Bingham 2D
 static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
@@ -72,7 +73,7 @@ static Register<mpm::Material<3>, mpm::LinearElasticDamage<3>, unsigned, const J
 // Maxwell 2D
 static Register<mpm::Material<2>, mpm::Maxwell<2>, unsigned, const Json&>
     maxwell_2d("Maxwell2D");
-// Maxwell 2D
+// Maxwell 2D 
 static Register<mpm::Material<3>, mpm::Maxwell<3>, unsigned, const Json&>
     maxwell_3d("Maxwell3D");
 
@@ -91,4 +92,12 @@ static Register<mpm::Material<2>, mpm::Glen<2>, unsigned, const Json&>
 // Glen 2d
 static Register<mpm::Material<3>, mpm::Glen<3>, unsigned, const Json&>
     glen_3d("Glen3D");
+
+// Glen 2d
+static Register<mpm::Material<2>, mpm::GlenDamage<2>, unsigned, const Json&>
+    glen_damage_2d("GlenDamage2D");
+
+// Glen 2d
+static Register<mpm::Material<3>, mpm::GlenDamage<3>, unsigned, const Json&>
+    glen_damage_3d("GlenDamage3D");
 

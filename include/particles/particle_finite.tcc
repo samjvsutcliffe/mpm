@@ -771,7 +771,7 @@ void mpm::ParticleFinite<Tdim>::compute_strain(double dt) noexcept {
   strain_(3) *= 2.0;
   strain_(4) *= 2.0;
   strain_(5) *= 2.0;
-  //dstrain_ = strain_ - strain_prev;
+  dstrain_ = strain_ - strain_prev;
   //Update size
   Eigen::Matrix<double,3,3> dlength = (df * df.transpose()).sqrt(); 
   for(int i = 0; i < Tdim;++i){
@@ -880,11 +880,8 @@ void mpm::ParticleFinite<Tdim>::compute_stress(const float dt_) noexcept {
       (this->material())
           ->compute_stress(stress_kirchoff_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
-  //this->stress_ = objectify_stress_jaumann(this->stress_ / deformation_gradient_.determinant());
-  //this->stress_ = objectify_stress_logspin(this->stress_);
   //Compute our cauchy stress
   this->stress_ = this->stress_kirchoff_ / deformation_gradient_.determinant();
-  //this->stress_ = this->stress_;
 }
 
 //! Map body force

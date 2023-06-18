@@ -27,6 +27,10 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
     if (analysis_.find("damage_nonlocal") != analysis_.end()) {
 		damage_nonlocal_ = analysis_["damage_nonlocal"].template get<bool>();
     }
+    if (analysis_.find("mass_scale") != analysis_.end()) {
+		// Mass scale parameter
+		mass_scale_ = analysis_["mass_scale"].template get<double>();
+    }
   } catch (std::domain_error& domain_error) {
     console_->error("{} {} Get analysis object: {}", __FILE__, __LINE__,
                     domain_error.what());
@@ -35,9 +39,11 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
     mpm_scheme_->damage_enable_ = damage_enable_;
     mpm_scheme_->damage_removal_ = damage_removal_;
     mpm_scheme_->damage_nonlocal_ = damage_nonlocal_;
+    mpm_scheme_->mass_scale_ = mass_scale_;
     console_->info("Damage enabled: {}", damage_enable_);
     console_->info("Damage removal: {}", damage_removal_);
     console_->info("Damage nonlocal: {}", damage_nonlocal_);
+    console_->info("Mass scaling: {}", mass_scale_);
 }
 
 //! MPM Explicit compute stress strain

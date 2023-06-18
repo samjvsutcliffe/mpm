@@ -1,12 +1,12 @@
-#ifndef MPM_MATERIAL_LINEAR_ELASTIC_DAMAGE_H_
-#define MPM_MATERIAL_LINEAR_ELASTIC_DAMAGE_H_
+#ifndef MPM_MATERIAL_GLEN_DAMAGE_H_
+#define MPM_MATERIAL_GLEN_DAMAGE_H_
 
 #include <limits>
 
 #include "Eigen/Dense"
 
 #include "material.h"
-#include "linear_elastic.h"
+#include "glen.h"
 
 namespace mpm {
 
@@ -15,7 +15,7 @@ namespace mpm {
 //! \details LinearElasticDamage class stresses and strains
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class LinearElasticDamage : public LinearElastic<Tdim> {
+class GlenDamage : public Glen<Tdim> {
  public:
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
@@ -24,32 +24,18 @@ class LinearElasticDamage : public LinearElastic<Tdim> {
 
   //! Constructor with id
   //! \param[in] material_properties Material properties
-  LinearElasticDamage(unsigned id, const Json& material_properties);
+  GlenDamage(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~LinearElasticDamage() override{};
+  ~GlenDamage() override{};
 
   //! Delete copy constructor
-  LinearElasticDamage(const LinearElasticDamage&) = delete;
+  GlenDamage(const GlenDamage&) = delete;
 
   //! Delete assignement operator
-  LinearElasticDamage& operator=(const LinearElasticDamage&) = delete;
+  GlenDamage& operator=(const GlenDamage&) = delete;
 
-  //Linear elastic degredation orthotropic
   virtual Vector6d degredation_function(Vector6d stress, double damage) override { 
-    //Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
-    //es.compute(voigt_to_matrix(stress));
-    //Eigen::Matrix<double,3,1> l = es.eigenvalues();
-    //Eigen::Matrix<double,3,3> v = es.eigenvectors();
-    //for(int i = 0;i < 3;++i){
-    //    double esii = l[i] - reference_pressure;
-    //    if(esii > 0.0){
-    //        l[i] = (esii * (1.0 - damage_)) + reference_pressure;
-    //    }
-    //}
-    ////reference_pressure = 0;
-    //return matrix_to_voigt(v * l.asDiagonal() * v.transpose());
-    //return stress * damage;
 	  Vector6d damage_stress = stress;
 	  damage_stress(3) *= std::max(1e-3,(1-damage));
 	  damage_stress(4) *= std::max(1e-3,(1-damage));
@@ -74,15 +60,29 @@ class LinearElasticDamage : public LinearElastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
-  using LinearElastic<Tdim>::de_;
+  //! Elastic stiffness matrix
+  using mpm::Glen<Tdim>::de_;
+  //! Density
+  using mpm::Glen<Tdim>::density_;
+  //! Elastic youngs modulus
+  using mpm::Glen<Tdim>::youngs_modulus_;
+  //! Bulk modulus
+  using mpm::Glen<Tdim>::bulk_modulus_;
+  //! Solid poisson ratio
+  using mpm::Glen<Tdim>::poisson_ratio_;
+  //! Effective viscous term A
+  using mpm::Glen<Tdim>::viscosity_;
+  //! Viscous flow power
+  using mpm::Glen<Tdim>::viscous_power_;
+
   double critical_stress_{0};
   double damage_rate_{0};
   double local_length_{0};
   double critical_damage_{0};
 
-};  // LinearElasticDamage class
+};  // GlenDamage class
 }  // namespace mpm
 
-#include "linear_elastic_damage.tcc"
+#include "glen_damage.tcc"
 
 #endif  // MPM_MATERIAL_LINEAR_ELASTIC_DAMAGE_H_

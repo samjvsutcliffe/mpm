@@ -223,7 +223,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_acceleration(
 //! Compute acceleration and velocity
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
-    unsigned phase, double dt) noexcept {
+    unsigned phase, double dt, double mass_scale) noexcept {
   bool status = false;
   const double tolerance = 1.0E-15;
   //const double tolerance = 0;
@@ -231,7 +231,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
     // acceleration = (unbalaced force / mass)
     this->acceleration_.col(phase) =
         (this->external_force_.col(phase) + this->internal_force_.col(phase)) /
-        this->mass_(phase);
+        (mass_scale * this->mass_(phase));
 
     // Apply friction constraints
     this->apply_friction_constraints(dt);
@@ -257,7 +257,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
 //! Compute acceleration and velocity with cundall damping factor
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
-    unsigned phase, double dt, double damping_factor) noexcept {
+    unsigned phase, double dt, double mass_scale, double damping_factor) noexcept {
   bool status = false;
   const double tolerance = 1.0E-15;
   if (mass_(phase) > tolerance) {
@@ -267,7 +267,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
     this->acceleration_.col(phase) =
         (unbalanced_force - damping_factor * unbalanced_force.norm() *
                                 this->velocity_.col(phase).cwiseSign()) /
-        this->mass_(phase);
+        (mass_scale * this->mass_(phase));
 
     // Apply friction constraints
     this->apply_friction_constraints(dt);
@@ -293,7 +293,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
 //! Compute acceleration and velocity with viscous damping factor
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_viscous(
-    unsigned phase, double dt, double damping_factor) noexcept {
+    unsigned phase, double dt, double mass_scale, double damping_factor) noexcept {
   bool status = false;
   const double tolerance = 1.0E-15;
   //const double tolerance = 0;
@@ -303,7 +303,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_viscous(
         this->external_force_.col(phase) + this->internal_force_.col(phase);
     this->acceleration_.col(phase) =
         (unbalanced_force// - damping_factor * this->velocity_.col(phase)
-            ) / this->mass_(phase);
+            ) / (mass_scale * this->mass_(phase));
     this->acceleration_.col(phase) -= damping_factor * this->velocity_.col(phase);
 
     // Apply friction constraints

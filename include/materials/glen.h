@@ -69,7 +69,7 @@ class Glen : public Material<Tdim> {
   //! Logger
   using Material<Tdim>::console_;
 
- private:
+ protected:
 
   //! Elastic stiffness matrix
   Matrix6x6 de_;

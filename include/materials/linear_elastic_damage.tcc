@@ -20,7 +20,7 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::LinearElasticDamage<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
-  const Vector6d dstress = this->de_ * dstrain;
+  const Vector6d dstress = this->degredation_function(this->de_ * dstrain, ptr->damage());
   return (stress + ptr->objective_stress_increment(dstress,stress));
   //return mpm::LinearElastic<Tdim>::compute_stress(stress,dstrain,ptr,state_vars);
 }

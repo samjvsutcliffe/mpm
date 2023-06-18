@@ -95,6 +95,7 @@ class ParticleDamage : public ParticleFinite<Tdim> {
   using ParticleBase<Tdim>::state_variables_;
   using ParticleFinite<Tdim>::reference_pressure;
   using ParticleFinite<Tdim>::stress_;
+  using ParticleFinite<Tdim>::stress_kirchoff_;
   using ParticleFinite<Tdim>::dstrain_;
   using ParticleFinite<Tdim>::deformation_gradient_;
   using ParticleFinite<Tdim>::scalar_properties_;

@@ -75,34 +75,39 @@ void mpm::ParticleDamage<Tdim>::initialise() {
 //! Compute damage increment
 template <unsigned Tdim>
 void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) noexcept {
-	local_length_ = (this->material())->template property<double>("local_length");
+    double ll = (this->material())->template property<double>("local_length");
+    double lld = (this->material())->template property<double>("local_length_damaged");
+    local_length_ = (ll * (1 - damage_)) + (lld * damage_);
 	critical_stress_ = (this->material())->template property<double>("critical_stress");
 	damage_rate_ = (this->material())->template property<double>("damage_rate");
 	critical_damage_ = (this->material())->template property<double>("critical_damage");
 
 
 
-    Eigen::Matrix<double,6,1> stress = this->stress();
     double inc = 0;
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
-    es.compute(this->voigt_to_matrix(stress));
-    const Eigen::Matrix<double,3,1> l = es.eigenvalues();
-    const double s1 = es.eigenvalues().maxCoeff();
-    const double s2 = es.eigenvalues().minCoeff();
-    const double stress_crit = s1 - reference_pressure;
-    //const double stress_crit = s1 - reference_pressure;
-    //const double stress_crit = std::sqrt(0.5 * (std::pow(std::max(l[2],0.0) - std::max(l[1],0.0), 2) + 
-    //                                            std::pow(std::max(l[1],0.0) - std::max(l[0],0.0), 2) +
-    //                                            std::pow(std::max(l[0],0.0) - std::max(l[2],0.0), 2)));
-    //console_->info("Stress critical {}\n", local_length_);
-    //damage_ybar_ = stress_crit;
-    if (stress_crit > 0)
-    {
-      const double integrity = 1.0d - damage_;
-      if (integrity > 0) {
-        inc += (stress_crit / integrity);
-      }
-    }
+    //Undamaged stress
+	  const double integrity = 1.0d - damage_;
+	if (integrity > 0) {
+		Eigen::Matrix<double,6,1> stress = this->stress() / integrity;
+		Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
+		es.compute(this->voigt_to_matrix(stress));
+		const Eigen::Matrix<double,3,1> l = es.eigenvalues();
+		const double s1 = es.eigenvalues().maxCoeff();
+		const double s2 = es.eigenvalues().minCoeff();
+		//const double stress_crit = s1 - reference_pressure;
+		const double stress_crit = std::sqrt(0.5 * (std::pow(std::max(l[2],0.0) - std::max(l[1],0.0), 2) + 
+													std::pow(std::max(l[1],0.0) - std::max(l[0],0.0), 2) +
+													std::pow(std::max(l[0],0.0) - std::max(l[2],0.0), 2))) - reference_pressure;
+		//console_->info("Stress critical {}\n", local_length_);
+		//damage_ybar_ = stress_crit;
+		if (stress_crit > 0)
+		{
+		  if (integrity > 0) {
+			inc += stress_crit;
+			//inc += stress_crit;
+		  }
+		}
+	}
 
     //If we are doing a local damage update, then our final damage increment is our current local one
     //If local: set inc to local damage
@@ -123,15 +128,10 @@ void mpm::ParticleDamage<Tdim>::compute_stress(float dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Calculate stress
-  stress_ = undamaged_stress_;
+  //Swap out our kirchoff stress for undamaged (previous) kirchoff stress
+  this->stress_kirchoff_ = undamaged_stress_;
   mpm::ParticleFinite<Tdim>::compute_stress(dt);
-  //undamaged_stress_ =
-  //    (this->material())
-  //        ->compute_stress(undamaged_stress_, this->dstrain_, this,
-  //                         &this->state_variables_[mpm::ParticlePhase::Solid]);
-
-  this->undamaged_stress_ = stress_ * deformation_gradient_.determinant();
-  //this->stress_ = undamaged_stress_;
+  this->undamaged_stress_ = this->stress_kirchoff_;
 }
 
 //! Apply damage increment
@@ -141,27 +141,16 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
     
   damage_ybar_ = damage_inc_;
   //Take our averaged y bar and apply damage rate to it
-  damage_inc_ = std::pow(std::max(0.0,damage_inc_ - critical_stress_),3.0) * damage_rate_;
+  damage_inc_ = std::pow(std::max(0.0,damage_inc_ - critical_stress_),1.0) * damage_rate_;
   damage_ += damage_inc_ * dt;
   damage_ = std::min(std::max(damage_, 0.0), 1.0);
   if (damage_ > critical_damage_) {
     damage_ = 1;
     damage_inc_ = 0;
   }
-  if (damage_ > 0.) {
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
-    es.compute(this->voigt_to_matrix(stress));
-    Eigen::Matrix<double,3,1> l = es.eigenvalues();
-    Eigen::Matrix<double,3,3> v = es.eigenvectors();
-    for(int i = 0;i < 3;++i){
-        double esii = l[i] - reference_pressure;
-        if(esii > 0.0){
-            l[i] = (esii * (1.0 - damage_)) + reference_pressure;
-        }
-    }
-    //reference_pressure = 0;
-    this->stress_ = this->matrix_to_voigt(v * l.asDiagonal() * v.transpose());
-  }
+  //if (damage_ > 0.) {
+  //  this->stress_ = (this->material())->degredation_function(stress,damage_);
+  //}
 }
 //! Delocalise damage
 template <unsigned Tdim>

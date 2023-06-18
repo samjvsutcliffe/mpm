@@ -67,6 +67,9 @@ class Material {
   //! State variables
   virtual std::vector<std::string> state_variables() const = 0;
 
+  //! Damage degredation function
+  virtual Vector6d degredation_function(Vector6d stress, double damage) { return stress; };
+
   //! Compute stress
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain

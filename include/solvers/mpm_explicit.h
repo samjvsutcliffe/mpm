@@ -88,6 +88,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   bool damage_removal_{false};
   //! Whether to enable damaged nonlocal damage
   bool damage_nonlocal_{false};
+  //! Mass scale parameter
+  double mass_scale_{1.0};
   //! Interface
   bool interface_{false};
   

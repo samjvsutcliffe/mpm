@@ -55,6 +55,16 @@ struct DamageNode {
      local_list.emplace_back(p);
      node_mutex_.unlock();
  }
+ bool RemoveParticle(mpm::ParticleBase<Tdim> * p){
+   auto position = std::find(local_list.begin(), local_list.end(), p);
+   if (position != local_list.end()) {
+     node_mutex_.lock();
+     local_list.erase(position);
+     node_mutex_.unlock();
+     return true;
+   }
+   return false;
+ }
   template <typename Toper>
   inline void iterate_over_particles(Toper oper){
       for(mpm::ParticleBase<Tdim>* p : local_list){
@@ -177,8 +187,16 @@ class DamageMesh {
     auto position = particle->coordinates();
     Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
     DamageNode<Tdim> & node = GetNode(index);
-    //node.AddParticle(std::shared_ptr<mpm::ParticleBase<Tdim>&>(particle));
     node.AddParticle(particle.get());
+  };
+  void RemoveParticle(const std::shared_ptr<ParticleBase<Tdim>> & particle) {
+    auto position = particle->coordinates();
+    Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
+    DamageNode<Tdim> & node = GetNode(index);
+    //Happy path
+    if (!node.RemoveParticle(particle.get())) {
+        //Sad path - we didn't find the particle at the current pos - start searching grid
+    };
   };
 
 };  // DamageMesh class

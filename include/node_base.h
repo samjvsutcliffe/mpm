@@ -175,21 +175,21 @@ class NodeBase {
   //! Compute acceleration
   //! \param[in] dt Time-step
   virtual bool compute_acceleration_velocity(unsigned phase,
-                                             double dt) noexcept = 0;
+                                             double dt,double mass_scale) noexcept = 0;
 
   //! Compute acceleration and velocity with cundall damping factor
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
   //! \param[in] damping_factor Damping factor
   virtual bool compute_acceleration_velocity_cundall(
-      unsigned phase, double dt, double damping_factor) noexcept = 0;
+      unsigned phase, double dt,double mass_scale, double damping_factor) noexcept = 0;
 
   //! Compute acceleration and velocity with viscous damping factor
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
   //! \param[in] damping_factor Damping factor
   virtual bool compute_acceleration_velocity_viscous(
-      unsigned phase, double dt, double damping_factor) noexcept = 0;
+      unsigned phase, double dt,double mass_scale, double damping_factor) noexcept = 0;
 
   //! Assign velocity constraint
   //! Directions can take values between 0 and Dim * Nphases

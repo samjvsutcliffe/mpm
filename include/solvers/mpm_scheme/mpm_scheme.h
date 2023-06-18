@@ -97,6 +97,8 @@ class MPMScheme {
   bool damage_removal_{true};
   //! Whether to enable damaged nonlocal damage
   bool damage_nonlocal_{false};
+  //! Mass scale parameter
+  double mass_scale_{1.0};
 };  // MPMScheme class
 }  // namespace mpm
 

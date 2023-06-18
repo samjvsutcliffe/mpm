@@ -664,6 +664,7 @@ bool mpm::Mesh<Tdim>::remove_particle(
   map_particles_[id]->remove_cell();
   // Remove a particle if found in the container and map
   return (particles_.remove(particle) && map_particles_.remove(id));
+  //this->remove_particle_by_id(id);
 }
 
 //! Remove a particle by id
@@ -671,8 +672,8 @@ template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::remove_particle_by_id(mpm::Index id) {
   // Remove associated cell for the particle
   map_particles_[id]->remove_cell();
-  bool result = particles_.remove(map_particles_[id]);
-  return (result && map_particles_.remove(id));
+  //damage_mesh_->RemoveParticle(map_particles_[id]);
+  return (particles_.remove(map_particles_[id]) && map_particles_.remove(id));
 }
 
 //! Remove a particle by id
