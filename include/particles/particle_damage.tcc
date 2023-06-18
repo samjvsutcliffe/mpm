@@ -94,10 +94,20 @@ void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) n
 		const Eigen::Matrix<double,3,1> l = es.eigenvalues();
 		const double s1 = es.eigenvalues().maxCoeff();
 		const double s2 = es.eigenvalues().minCoeff();
-		//const double stress_crit = s1 - reference_pressure;
-		const double stress_crit = std::sqrt(0.5 * (std::pow(std::max(l[2],0.0) - std::max(l[1],0.0), 2) + 
-													std::pow(std::max(l[1],0.0) - std::max(l[0],0.0), 2) +
-													std::pow(std::max(l[0],0.0) - std::max(l[2],0.0), 2))) - reference_pressure;
+		double stress_crit;
+        auto stress_measure = (this->material())->template property<std::string>("stress_measure");
+		if (stress_measure == "EPS") {
+			stress_crit = s1 - reference_pressure;
+		} else if (stress_measure == "VM") {
+		 stress_crit = std::sqrt(
+			0.5 *
+			(std::pow(std::max(l[2]-reference_pressure, 0.0) - std::max(l[1]-reference_pressure, 0.0), 2) +
+			 std::pow(std::max(l[1]-reference_pressure, 0.0) - std::max(l[0]-reference_pressure, 0.0), 2) +
+			 std::pow(std::max(l[0]-reference_pressure, 0.0) - std::max(l[2]-reference_pressure, 0.0), 2)));
+		}
+		else {
+			stress_crit = s1 - reference_pressure;
+		}
 		//console_->info("Stress critical {}\n", local_length_);
 		//damage_ybar_ = stress_crit;
 		if (stress_crit > 0)
@@ -129,6 +139,7 @@ void mpm::ParticleDamage<Tdim>::compute_stress(float dt) noexcept {
   assert(this->material() != nullptr);
   // Calculate stress
   //Swap out our kirchoff stress for undamaged (previous) kirchoff stress
+  //state_variables_[mpm::ParticlePhase::Solid]["reference_pressure"] = reference_pressure;
   this->stress_kirchoff_ = undamaged_stress_;
   mpm::ParticleFinite<Tdim>::compute_stress(dt);
   this->undamaged_stress_ = this->stress_kirchoff_;

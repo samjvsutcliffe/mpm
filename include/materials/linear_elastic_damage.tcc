@@ -8,6 +8,13 @@ mpm::LinearElasticDamage<Tdim>::LinearElasticDamage(unsigned id,
     damage_rate_ = material_properties.at("damage_rate").template get<double>();
     local_length_ = material_properties.at("local_length").template get<double>();
     critical_damage_ = material_properties.at("critical_damage").template get<double>();
+    auto degredation_function = material_properties.at("degredation_function").template get<std::string>();
+    if (degredation_function == "isotropic") {
+      deg_ = DegredationFunctions::Isotropic;
+    }
+    if (degredation_function == "deviatoric") {
+      deg_ = DegredationFunctions::Deviatoric;
+    }
   } catch (Json::exception& except) {
     console_->error("Material parameter not set: {} {}\n", except.what(),
                     except.id);

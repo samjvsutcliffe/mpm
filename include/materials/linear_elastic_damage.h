@@ -5,6 +5,7 @@
 
 #include "Eigen/Dense"
 
+#include <string>
 #include "material.h"
 #include "linear_elastic.h"
 
@@ -50,11 +51,17 @@ class LinearElasticDamage : public LinearElastic<Tdim> {
     ////reference_pressure = 0;
     //return matrix_to_voigt(v * l.asDiagonal() * v.transpose());
     //return stress * damage;
+    if (deg_ == DegredationFunctions::Isotropic) {
+	  return stress * std::max(1e-3,(1-damage));
+    } else if (deg_ == DegredationFunctions::Deviatoric) {
 	  Vector6d damage_stress = stress;
 	  damage_stress(3) *= std::max(1e-3,(1-damage));
 	  damage_stress(4) *= std::max(1e-3,(1-damage));
 	  damage_stress(5) *= std::max(1e-3,(1-damage));
 	  return damage_stress;
+    } else {
+      return stress;
+    }
   };
 
   //! Compute stress
@@ -75,10 +82,15 @@ class LinearElasticDamage : public LinearElastic<Tdim> {
   //! Logger
   using Material<Tdim>::console_;
   using LinearElastic<Tdim>::de_;
+  enum class DegredationFunctions {
+    Isotropic,
+    Deviatoric
+  };
   double critical_stress_{0};
   double damage_rate_{0};
   double local_length_{0};
   double critical_damage_{0};
+  DegredationFunctions deg_{DegredationFunctions::Isotropic};
 
 };  // LinearElasticDamage class
 }  // namespace mpm
