@@ -56,6 +56,7 @@ bool mpm::Mesh<Tdim>::create_nodes(mpm::Index gnid,
     //We should be reading the damage resolution from the input file
     const double damage_resolution = 20;
     damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>(min,max, damage_resolution);
+    //damage_mesh_->console_ = console_;
     //damage_mesh_->console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
     //damage_mesh_ = std::make_unique<mpm::DamageMesh<Tdim>>();
 
@@ -661,6 +662,7 @@ bool mpm::Mesh<Tdim>::remove_particle(
     const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle) {
   const mpm::Index id = particle->id();
   // Remove associated cell for the particle
+  damage_mesh_->RemoveParticle(map_particles_[id]);
   map_particles_[id]->remove_cell();
   // Remove a particle if found in the container and map
   return (particles_.remove(particle) && map_particles_.remove(id));
@@ -671,8 +673,8 @@ bool mpm::Mesh<Tdim>::remove_particle(
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::remove_particle_by_id(mpm::Index id) {
   // Remove associated cell for the particle
+  damage_mesh_->RemoveParticle(map_particles_[id]);
   map_particles_[id]->remove_cell();
-  //damage_mesh_->RemoveParticle(map_particles_[id]);
   return (particles_.remove(map_particles_[id]) && map_particles_.remove(id));
 }
 
@@ -686,6 +688,7 @@ void mpm::Mesh<Tdim>::remove_particles(const std::vector<mpm::Index>& pids) {
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 #endif
     for (auto& id : pids) {
+	  damage_mesh_->RemoveParticle(map_particles_[id]);
       map_particles_[id]->remove_cell();
       map_particles_.remove(id);
     }

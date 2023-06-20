@@ -378,6 +378,9 @@ class ParticleBase {
  public:
      //TODO fix interface
   double reference_pressure = 0;
+  bool in_damage_mesh_{false};
+  //! Reference coordinates (in a cell)
+  Eigen::Matrix<double, Tdim, 1> damage_position_;
 
  protected:
   //! particleBase id
@@ -390,6 +393,7 @@ class ParticleBase {
   bool status_{true};
   //! Reference coordinates (in a cell)
   Eigen::Matrix<double, Tdim, 1> xi_;
+
   //! Cell
   std::shared_ptr<Cell<Tdim>> cell_;
   //! Vector of nodal pointers

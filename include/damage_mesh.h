@@ -104,7 +104,7 @@ class DamageMesh {
   unsigned ncomms_{0};
 
  public:
-  //! Logger
+  //! LoggerWe couldn't find particle to remove!
   std::unique_ptr<spdlog::logger> console_;
   // Construct a mesh with a global unique id
   //! \param[in] id Global mesh id
@@ -116,6 +116,8 @@ class DamageMesh {
       ////Default initalise nodes
       int size = mesh_size.prod();
       nodes_ = std::vector<DamageNode<Tdim>>(size);
+      std::string logger = "damage_mesh";
+	  console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
       //nodes_.resize(size);
   };
 
@@ -185,20 +187,50 @@ class DamageMesh {
   };
   void AddParticle(const std::shared_ptr<ParticleBase<Tdim>> & particle) {
     auto position = particle->coordinates();
+    particle->in_damage_mesh_ = true;
+    particle->damage_position_ = position;
     Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
     DamageNode<Tdim> & node = GetNode(index);
     node.AddParticle(particle.get());
   };
-  void RemoveParticle(const std::shared_ptr<ParticleBase<Tdim>> & particle) {
-    auto position = particle->coordinates();
-    Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
-    DamageNode<Tdim> & node = GetNode(index);
-    //Happy path
-    if (!node.RemoveParticle(particle.get())) {
-        //Sad path - we didn't find the particle at the current pos - start searching grid
-    };
+  void UpdateParticle(const std::shared_ptr<ParticleBase<Tdim>>& particle) {
+    if (particle->in_damage_mesh_) {
+      auto current_position = particle->coordinates();
+      double diff =
+          (current_position - particle->damage_position_).squaredNorm();
+      if (diff > resolution_ / 4) {
+        RemoveParticle(particle);
+        AddParticle(particle);
+      }
+    } else {
+      AddParticle(particle);
+    }
   };
-
+  void RemoveParticle(const std::shared_ptr<ParticleBase<Tdim>>& particle) {
+	//console_->info("Remove particle from damage mesh");
+    if (particle->in_damage_mesh_) {
+      // auto position = particle->coordinates();
+      auto position = particle->damage_position_;
+      Eigen::Matrix<int, Tdim, 1> index = PositionToIndex(position);
+      DamageNode<Tdim>& node = GetNode(index);
+      // Happy path
+      if (!node.RemoveParticle(particle.get())) {
+        // Sad path - we didn't find the particle at the current pos - start
+        console_->info("We couldn't find particle to remove!");
+        // searching grid #pragma omp parallel for schedule(runtime)
+        //for (auto nitr = nodes_.begin(); nitr != nodes_.end(); ++nitr) {
+		  //if (nitr->RemoveParticle(particle.get()))
+		  //{
+          //  particle->in_damage_mesh_ = false;
+          //  break;
+		  //}
+        //}
+      }
+	  else {
+	    particle->in_damage_mesh_ = false;
+	  }
+    }
+  };
 };  // DamageMesh class
 }  // namespace mpm
 

@@ -88,7 +88,7 @@ void mpm::ParticleDamage<Tdim>::compute_damage_increment(double dt,bool local) n
     //Undamaged stress
 	  const double integrity = 1.0d - damage_;
 	if (integrity > 0) {
-		Eigen::Matrix<double,6,1> stress = this->stress() / integrity;
+		Eigen::Matrix<double,6,1> stress = this->undamaged_stress_ / (integrity);
 		Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
 		es.compute(this->voigt_to_matrix(stress));
 		const Eigen::Matrix<double,3,1> l = es.eigenvalues();
@@ -140,9 +140,13 @@ void mpm::ParticleDamage<Tdim>::compute_stress(float dt) noexcept {
   // Calculate stress
   //Swap out our kirchoff stress for undamaged (previous) kirchoff stress
   //state_variables_[mpm::ParticlePhase::Solid]["reference_pressure"] = reference_pressure;
-  this->stress_kirchoff_ = undamaged_stress_;
+  //this->stress_kirchoff_ = undamaged_stress_;
   mpm::ParticleFinite<Tdim>::compute_stress(dt);
-  this->undamaged_stress_ = this->stress_kirchoff_;
+  this->undamaged_stress_ = this->stress_;
+  //this->stress_kirchoff_;
+  this->stress_(0) += reference_pressure*std::min(1-1e-2,damage_);
+  this->stress_(1) += reference_pressure*std::min(1-1e-2,damage_);
+  this->stress_(2) += reference_pressure*std::min(1-1e-2,damage_);
 }
 
 //! Apply damage increment
