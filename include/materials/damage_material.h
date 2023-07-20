@@ -40,7 +40,8 @@ class Damage : public Material<Tdim> {
   double critical_damage_{0};
   class enum DegredationFunctions {
     Isotropic,
-    Deviatoric
+    Deviatoric,
+    Orthotropic
   };
   DegredationFunctions deg_{DegredationFunctions::Isotropic};
 }

@@ -163,8 +163,20 @@ void mpm::ParticleDamage<Tdim>::apply_damage(double dt) noexcept {
     damage_ = 1;
     damage_inc_ = 0;
   }
-  //if (damage_ > 0.) {
-  //  this->stress_ = (this->material())->degredation_function(stress,damage_);
+  //if (damage_ > 0. && (this->material())->deg_ == DegredationFunctions::Orthotropic) {
+  //  //this->stress_ = (this->material())->degredation_function(stress,damage_);
+  //  Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double,3,3>> es;  
+  //  es.compute(voigt_to_matrix(stress));
+  //  Eigen::Matrix<double,3,1> l = es.eigenvalues();
+  //  Eigen::Matrix<double,3,3> v = es.eigenvectors();
+  //  for(int i = 0;i < 3;++i){
+  //      double esii = l[i] - reference_pressure;
+  //      if(esii > 0.0){
+  //          l[i] = (esii * (1.0 - damage_)) + reference_pressure;
+  //      }
+  //  }
+  //  //reference_pressure = 0;
+  //  this->stress_ = matrix_to_voigt(v * l.asDiagonal() * v.transpose());
   //}
 }
 //! Delocalise damage
